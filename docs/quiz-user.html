@@ -7,129 +7,99 @@
   <style>
     body {
       font-family: sans-serif;
-      padding: 2rem;
-      background: #f9f9f9;
+      text-align: center;
+      padding: 2em;
     }
-    h1 {
-      font-size: 1.2rem;
-      transition: background-color 0.3s;
+    .choices button {
+      display: block;
+      margin: 0.5em auto;
+      padding: 1em;
+      font-size: 1.2em;
+      width: 80%;
     }
-    .choice {
-      margin: 1rem 0;
-    }
-    button {
-      padding: 0.6rem 1rem;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    .message {
-      margin-top: 1rem;
-      font-weight: bold;
-      color: green;
-    }
-    .flash {
-      animation: flash 0.6s;
-    }
-    @keyframes flash {
-      0% { background-color: yellow; }
-      100% { background-color: transparent; }
+    .loading {
+      font-style: italic;
+      color: #888;
     }
   </style>
 </head>
 <body>
-  <h1 id="question">Chargement de la question…</h1>
-  <form id="quiz-form"></form>
+  <h1 id="question-title">Chargement de la question...</h1>
+  <div class="choices" id="choices-container"></div>
+  <p id="status" class="loading"></p>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbzhmLYw_vwrJhQW-15V1gae3DW_or6M7DoceBq49teLytqgy18yc9Q9Bse-ZSApjMsj/exec";
-    let lastQuestionId = null;
-    let currentQuestion = null;
+    const apiBase = "https://AKfycbzhmLYw_vwrJhQW-15V1gae3DW_or6M7DoceBq49teLytqgy18yc9Q9Bse-ZSApjMsj/exec"; // Remplace par ton URL Google Apps Script
 
-    async function pollQuestion() {
+    async function loadQuestion() {
+      document.getElementById("status").textContent = "";
       try {
-        const res = await fetch(`${API_URL}?action=getQuestion`);
+        const res = await fetch(`${apiBase}?action=getQuestion`);
         const data = await res.json();
 
-        if (!data || data.id === "" || data.id === lastQuestionId) return;
+        const title = document.getElementById("question-title");
+        const choices = document.getElementById("choices-container");
 
-        lastQuestionId = data.id;
-        currentQuestion = data;
-
-        const alreadyAnswered = localStorage.getItem("answered_" + data.id);
-        const questionElem = document.getElementById("question");
-        const form = document.getElementById("quiz-form");
-
-        questionElem.classList.add("flash");
-        setTimeout(() => questionElem.classList.remove("flash"), 600);
-
-        if (alreadyAnswered) {
-          questionElem.textContent = data.question + " (Réponse déjà envoyée)";
-          form.innerHTML = "<p class='message'>Vous avez déjà répondu à cette question.</p>";
+        if (!data.id) {
+          title.textContent = data.question;
+          choices.innerHTML = "";
           return;
         }
 
-        questionElem.textContent = data.question;
-        form.innerHTML = "";
+        title.textContent = data.question;
+        choices.innerHTML = "";
 
-        data.choices.forEach((choice) => {
-          const div = document.createElement("div");
-          div.className = "choice";
-          div.innerHTML = `
-            <label>
-              <input type="radio" name="answer" value="${choice}" />
-              ${choice}
-            </label>
-          `;
-          form.appendChild(div);
+        data.choices.forEach(choice => {
+          const btn = document.createElement("button");
+          btn.textContent = choice;
+          btn.onclick = () => submitAnswer(data.id, choice);
+          choices.appendChild(btn);
         });
 
-        const submitButton = document.createElement("button");
-        submitButton.type = "submit";
-        submitButton.textContent = "Envoyer";
-        form.appendChild(submitButton);
       } catch (err) {
-        console.error("Erreur lors de la récupération de la question :", err);
+        console.error(err);
+        document.getElementById("status").textContent = "Erreur de chargement";
       }
     }
 
-    document.getElementById("quiz-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const selected = document.querySelector('input[name="answer"]:checked');
-      if (!selected || !currentQuestion) return;
+    async function submitAnswer(questionId, choice) {
+      const formData = new FormData();
+      formData.append("action", "submitAnswer");
+      formData.append("questionId", questionId);
+      formData.append("choice", choice);
+      formData.append("userAgent", navigator.userAgent);
 
-      const answer = selected.value;
       try {
-        const formData = new URLSearchParams();
-        formData.append("questionId", currentQuestion.id);
-        formData.append("choice", answer); // <- C'EST ICI qu'on a changé "answer" en "choice"
-
-        await fetch(`${API_URL}?action=submitAnswer`, {
+        const res = await fetch(apiBase, {
           method: "POST",
           body: formData,
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
         });
 
-        localStorage.setItem("answered_" + currentQuestion.id, "1");
+        const text = await res.text();
+        let json;
 
-        document.getElementById("quiz-form").innerHTML =
-          "<p class='message'>Réponse envoyée. Merci !</p>";
-        document.getElementById("question").textContent = currentQuestion.question + " (Réponse déjà envoyée)";
+        try {
+          json = JSON.parse(text);
+        } catch {
+          throw new Error("Réponse inattendue du serveur : " + text);
+        }
+
+        if (json.status === "already_answered") {
+          document.getElementById("status").textContent = "Tu as déjà répondu à cette question.";
+        } else if (json.status === "ok") {
+          document.getElementById("status").textContent = "Réponse enregistrée !";
+        } else {
+          document.getElementById("status").textContent = "Erreur : réponse inconnue du serveur.";
+        }
+
       } catch (err) {
-        console.error("Erreur lors de l’envoi de la réponse :", err);
-        alert("Erreur lors de l’envoi.");
+        console.error(err);
+        document.getElementById("status").textContent = "Erreur d'envoi";
       }
-    });
+    }
 
-    pollQuestion();
-    setInterval(pollQuestion, 2000);
+    loadQuestion();
+    setInterval(loadQuestion, 5000); // Recharge automatiquement toutes les 5 sec
   </script>
 </body>
 </html>
