@@ -63,6 +63,7 @@
           return;
         }
 
+        // Sinon, afficher la question normalement
         questionElem.textContent = data.question;
         form.innerHTML = "";
 
@@ -71,7 +72,7 @@
           div.className = "choice";
           div.innerHTML = `
             <label>
-              <input type="radio" name="answer" value="${choice}" />
+              <input type="radio" name="choice" value="${choice}" />
               ${choice}
             </label>
           `;
@@ -89,7 +90,7 @@
 
     document.getElementById("quiz-form").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const selected = document.querySelector('input[name="answer"]:checked');
+      const selected = document.querySelector('input[name="choice"]:checked');
       if (!selected || !currentQuestion) return;
 
       const answer = selected.value;
@@ -98,7 +99,7 @@
         formData.append("questionId", currentQuestion.id);
         formData.append("answer", answer);
 
-        await fetch(`${API_URL}?action=submitAnswer`, {
+        const response = await fetch(`${API_URL}?action=submitAnswer`, {
           method: "POST",
           body: formData,
           headers: {
@@ -106,10 +107,13 @@
           },
         });
 
+        if (!response.ok) throw new Error("Erreur serveur");
+
         localStorage.setItem("answered_" + currentQuestion.id, "1");
 
         document.getElementById("quiz-form").innerHTML =
           "<p class='message'>Réponse envoyée. Merci !</p>";
+        document.getElementById("question").textContent = currentQuestion.question + " (Réponse envoyée)";
       } catch (err) {
         console.error("Erreur lors de l’envoi de la réponse :", err);
         alert("Erreur lors de l’envoi.");
