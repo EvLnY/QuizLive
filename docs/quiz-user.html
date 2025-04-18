@@ -540,20 +540,37 @@
       }
     });
 
-    // Réinitialisation des droits de vote via localStorage
-    let lastReset = localStorage.getItem("lastReset") || 0;
-    setInterval(() => {
-      const globalReset = localStorage.getItem("quizDisplay_resetTimestamp") || 0;
-      if (globalReset > lastReset) {
+    // Vérification de réinitialisation
+    let lastResetToken = localStorage.getItem("lastResetToken") || "";
+    function checkForReset() {
+      // Vérifions les deux emplacements de stockage
+      const resetToken = localStorage.getItem("quizReset_token") || sessionStorage.getItem("quizReset_token") || "";
+
+      // En cas de changement du token
+      if (resetToken && resetToken !== lastResetToken) {
+        console.log("Réinitialisation détectée!");
+
+        // Nettoyer toutes les réponses stockées
         Object.keys(localStorage)
           .filter(k => k.startsWith("answered_"))
           .forEach(k => localStorage.removeItem(k));
-        lastReset = globalReset;
-        localStorage.setItem("lastReset", globalReset);
-        lastQuestionId = null; // ← force le rechargement même si l'ID ne change pas
-        isFirstLoad = true; // Réactive les animations pour la prochaine question
+
+        // Mettre à jour notre référence locale
+        lastResetToken = resetToken;
+        localStorage.setItem("lastResetToken", resetToken);
+
+        // Forcer un rechargement complet pour être sûr
+        window.location.reload();
+        return true;
       }
-    }, 2000);
+      return false;
+    }
+
+// Vérifier au démarrage et périodiquement
+document.addEventListener('DOMContentLoaded', function() {
+  checkForReset();
+  setInterval(checkForReset, 2000);
+});
 
     // Initialisation avec animation d'entrée uniquement au premier chargement
     document.addEventListener('DOMContentLoaded', function() {
