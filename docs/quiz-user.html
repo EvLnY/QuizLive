@@ -1,124 +1,135 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Quiz</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quiz - Participant</title>
   <style>
     body {
       font-family: sans-serif;
       padding: 2rem;
-      background-color: #f8f9fa;
+      background: #f9f9f9;
     }
-    .question {
-      font-size: 1.5rem;
-      margin-bottom: 1rem;
+    h1 {
+      font-size: 1.2rem;
     }
-    .choices button {
-      display: block;
-      width: 100%;
-      padding: 1rem;
-      margin: 0.5rem 0;
-      font-size: 1rem;
+    .choice {
+      margin: 1rem 0;
+    }
+    button {
+      padding: 0.6rem 1rem;
       background-color: #007bff;
       color: white;
       border: none;
-      border-radius: 0.5rem;
+      border-radius: 8px;
       cursor: pointer;
     }
-    .choices button:hover {
+    button:hover {
       background-color: #0056b3;
     }
     .message {
-      margin-top: 1.5rem;
+      margin-top: 1rem;
       font-weight: bold;
+      color: green;
     }
   </style>
 </head>
 <body>
-  <div class="question" id="question">Chargement de la question...</div>
-  <div class="choices" id="choices"></div>
-  <div class="message" id="message"></div>
+  <h1 id="question">Chargement de la question…</h1>
+  <form id="quiz-form"></form>
 
   <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhmLYw_vwrJhQW-15V1gae3DW_or6M7DoceBq49teLytqgy18yc9Q9Bse-ZSApjMsj/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbzhmLYw_vwrJhQW-15V1gae3DW_or6M7DoceBq49teLytqgy18yc9Q9Bse-ZSApjMsj/exec";
+    let lastQuestionId = null;
+    let currentQuestion = null;
 
-    let currentQuestionId = "";
-
-    async function loadQuestion() {
+    async function pollQuestion() {
       try {
-        const res = await fetch(`${SCRIPT_URL}?action=getQuestion`);
+        const res = await fetch(`${API_URL}?action=getQuestion`);
         const data = await res.json();
 
-        currentQuestionId = data.id;
-        if (!currentQuestionId) {
-          document.getElementById("question").textContent = data.question || "Aucune question active.";
+        if (!data || data.id === "" || data.id === lastQuestionId) return;
+
+        lastQuestionId = data.id;
+        currentQuestion = data;
+
+        const alreadyAnswered = localStorage.getItem("answered_" + data.id);
+        const questionElem = document.getElementById("question");
+        const form = document.getElementById("quiz-form");
+
+        if (alreadyAnswered) {
+          questionElem.textContent = stripMultiTag(data.question) + " (Réponse déjà envoyée)";
+          form.innerHTML = "<p class='message'>Vous avez déjà répondu à cette question.</p>";
           return;
         }
 
-        document.getElementById("question").textContent = data.question;
-        const choicesDiv = document.getElementById("choices");
-        choicesDiv.innerHTML = "";
+        const isMultiple = data.question.includes("::multi");
+        questionElem.textContent = stripMultiTag(data.question);
+        form.innerHTML = "";
 
-        data.choices.forEach(choice => {
-          const btn = document.createElement("button");
-          btn.textContent = choice;
-          btn.onclick = () => submitAnswer(choice);
-          choicesDiv.appendChild(btn);
+        data.choices.forEach((choice) => {
+          const div = document.createElement("div");
+          div.className = "choice";
+          div.innerHTML = `
+            <label>
+              <input type="${isMultiple ? "checkbox" : "radio"}" name="answer" value="${choice}" />
+              ${choice}
+            </label>
+          `;
+          form.appendChild(div);
         });
 
-        // Si déjà répondu, on désactive les choix
-        const answeredKey = `answered_${currentQuestionId}`;
-        if (localStorage.getItem(answeredKey)) {
-          disableChoices("Vous avez déjà répondu à cette question.");
-        }
-
+        const submitButton = document.createElement("button");
+        submitButton.type = "submit";
+        submitButton.textContent = "Envoyer";
+        form.appendChild(submitButton);
       } catch (err) {
-        console.error("Erreur lors du chargement :", err);
-        document.getElementById("question").textContent = "Erreur de chargement.";
+        console.error("Erreur lors de la récupération de la question :", err);
       }
     }
 
-    async function submitAnswer(choice) {
-      const answeredKey = `answered_${currentQuestionId}`;
-      if (localStorage.getItem(answeredKey)) {
-        document.getElementById("message").textContent = "Vous avez déjà répondu.";
-        return;
-      }
+    document.getElementById("quiz-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!currentQuestion) return;
+
+      const isMultiple = currentQuestion.question.includes("::multi");
+      const selected = isMultiple
+        ? Array.from(document.querySelectorAll('input[name="answer"]:checked')).map(input => input.value)
+        : [document.querySelector('input[name="answer"]:checked')?.value];
+
+      if (selected.length === 0 || selected.includes(undefined)) return;
 
       try {
-        const params = new URLSearchParams({
-          action: "submitAnswer",
-          questionId: currentQuestionId,
-          choice: choice,
-          userAgent: navigator.userAgent
-        });
+        for (let answer of selected) {
+          const formData = new URLSearchParams();
+          formData.append("questionId", currentQuestion.id);
+          formData.append("choice", answer);
 
-        const res = await fetch(`${SCRIPT_URL}?${params.toString()}`, { method: "POST" });
-        const data = await res.json();
-
-        if (data.message === "Réponse enregistrée") {
-          localStorage.setItem(answeredKey, "true");
-          disableChoices("Merci pour votre réponse !");
-        } else {
-          throw new Error(data.error || "Réponse inconnue du serveur.");
+          await fetch(`${API_URL}?action=submitAnswer`, {
+            method: "POST",
+            body: formData,
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+          });
         }
 
+        localStorage.setItem("answered_" + currentQuestion.id, "1");
+
+        document.getElementById("quiz-form").innerHTML =
+          "<p class='message'>Réponse envoyée. Merci !</p>";
       } catch (err) {
-        console.error("Erreur lors de la soumission :", err);
-        document.getElementById("message").textContent = "Erreur : " + err.message;
+        console.error("Erreur lors de l’envoi de la réponse :", err);
+        alert("Erreur lors de l’envoi.");
       }
+    });
+
+    function stripMultiTag(questionText) {
+      return questionText.replace("::multi", "").trim();
     }
 
-    function disableChoices(msg) {
-      document.querySelectorAll("#choices button").forEach(btn => {
-        btn.disabled = true;
-        btn.style.opacity = 0.6;
-        btn.style.cursor = "not-allowed";
-      });
-      document.getElementById("message").textContent = msg;
-    }
-
-    loadQuestion();
+    pollQuestion();
+    setInterval(pollQuestion, 2000);
   </script>
 </body>
 </html>
