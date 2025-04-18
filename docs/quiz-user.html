@@ -12,6 +12,7 @@
     }
     h1 {
       font-size: 1.2rem;
+      transition: background-color 0.3s;
     }
     .choice {
       margin: 1rem 0;
@@ -31,6 +32,13 @@
       margin-top: 1rem;
       font-weight: bold;
       color: green;
+    }
+    .flash {
+      animation: flash 0.6s;
+    }
+    @keyframes flash {
+      0% { background-color: yellow; }
+      100% { background-color: transparent; }
     }
   </style>
 </head>
@@ -57,13 +65,15 @@
         const questionElem = document.getElementById("question");
         const form = document.getElementById("quiz-form");
 
+        questionElem.classList.add("flash");
+        setTimeout(() => questionElem.classList.remove("flash"), 600);
+
         if (alreadyAnswered) {
           questionElem.textContent = data.question + " (Réponse déjà envoyée)";
           form.innerHTML = "<p class='message'>Vous avez déjà répondu à cette question.</p>";
           return;
         }
 
-        // Sinon, afficher la question normalement
         questionElem.textContent = data.question;
         form.innerHTML = "";
 
@@ -72,7 +82,7 @@
           div.className = "choice";
           div.innerHTML = `
             <label>
-              <input type="radio" name="choice" value="${choice}" />
+              <input type="radio" name="answer" value="${choice}" />
               ${choice}
             </label>
           `;
@@ -90,16 +100,16 @@
 
     document.getElementById("quiz-form").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const selected = document.querySelector('input[name="choice"]:checked');
+      const selected = document.querySelector('input[name="answer"]:checked');
       if (!selected || !currentQuestion) return;
 
       const answer = selected.value;
       try {
         const formData = new URLSearchParams();
         formData.append("questionId", currentQuestion.id);
-        formData.append("answer", answer);
+        formData.append("choice", answer); // <- C'EST ICI qu'on a changé "answer" en "choice"
 
-        const response = await fetch(`${API_URL}?action=submitAnswer`, {
+        await fetch(`${API_URL}?action=submitAnswer`, {
           method: "POST",
           body: formData,
           headers: {
@@ -107,13 +117,11 @@
           },
         });
 
-        if (!response.ok) throw new Error("Erreur serveur");
-
         localStorage.setItem("answered_" + currentQuestion.id, "1");
 
         document.getElementById("quiz-form").innerHTML =
           "<p class='message'>Réponse envoyée. Merci !</p>";
-        document.getElementById("question").textContent = currentQuestion.question + " (Réponse envoyée)";
+        document.getElementById("question").textContent = currentQuestion.question + " (Réponse déjà envoyée)";
       } catch (err) {
         console.error("Erreur lors de l’envoi de la réponse :", err);
         alert("Erreur lors de l’envoi.");
