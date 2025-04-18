@@ -1,105 +1,124 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Quiz - Participant</title>
+  <meta charset="UTF-8">
+  <title>Quiz</title>
   <style>
     body {
       font-family: sans-serif;
-      text-align: center;
-      padding: 2em;
+      padding: 2rem;
+      background-color: #f8f9fa;
+    }
+    .question {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
     }
     .choices button {
       display: block;
-      margin: 0.5em auto;
-      padding: 1em;
-      font-size: 1.2em;
-      width: 80%;
+      width: 100%;
+      padding: 1rem;
+      margin: 0.5rem 0;
+      font-size: 1rem;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
     }
-    .loading {
-      font-style: italic;
-      color: #888;
+    .choices button:hover {
+      background-color: #0056b3;
+    }
+    .message {
+      margin-top: 1.5rem;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <h1 id="question-title">Chargement de la question...</h1>
-  <div class="choices" id="choices-container"></div>
-  <p id="status" class="loading"></p>
+  <div class="question" id="question">Chargement de la question...</div>
+  <div class="choices" id="choices"></div>
+  <div class="message" id="message"></div>
 
   <script>
-    const apiBase = "https://script.google.com/macros/s/AKfycbzhmLYw_vwrJhQW-15V1gae3DW_or6M7DoceBq49teLytqgy18yc9Q9Bse-ZSApjMsj/exec"; // Remplace par ton URL Google Apps Script
+    const SCRIPT_URL = "https://script.google.com/macros/s/TON_ID_SCRIPT/exec";
+
+    let currentQuestionId = "";
 
     async function loadQuestion() {
-      document.getElementById("status").textContent = "";
       try {
-        const res = await fetch(`${apiBase}?action=getQuestion`);
+        const res = await fetch(`${SCRIPT_URL}?action=getQuestion`);
         const data = await res.json();
 
-        const title = document.getElementById("question-title");
-        const choices = document.getElementById("choices-container");
-
-        if (!data.id) {
-          title.textContent = data.question;
-          choices.innerHTML = "";
+        currentQuestionId = data.id;
+        if (!currentQuestionId) {
+          document.getElementById("question").textContent = data.question || "Aucune question active.";
           return;
         }
 
-        title.textContent = data.question;
-        choices.innerHTML = "";
+        document.getElementById("question").textContent = data.question;
+        const choicesDiv = document.getElementById("choices");
+        choicesDiv.innerHTML = "";
 
         data.choices.forEach(choice => {
           const btn = document.createElement("button");
           btn.textContent = choice;
-          btn.onclick = () => submitAnswer(data.id, choice);
-          choices.appendChild(btn);
+          btn.onclick = () => submitAnswer(choice);
+          choicesDiv.appendChild(btn);
         });
 
+        // Si déjà répondu, on désactive les choix
+        const answeredKey = `answered_${currentQuestionId}`;
+        if (localStorage.getItem(answeredKey)) {
+          disableChoices("Vous avez déjà répondu à cette question.");
+        }
+
       } catch (err) {
-        console.error(err);
-        document.getElementById("status").textContent = "Erreur de chargement";
+        console.error("Erreur lors du chargement :", err);
+        document.getElementById("question").textContent = "Erreur de chargement.";
       }
     }
 
-    async function submitAnswer(questionId, choice) {
-      const formData = new FormData();
-      formData.append("action", "submitAnswer");
-      formData.append("questionId", questionId);
-      formData.append("choice", choice);
-      formData.append("userAgent", navigator.userAgent);
+    async function submitAnswer(choice) {
+      const answeredKey = `answered_${currentQuestionId}`;
+      if (localStorage.getItem(answeredKey)) {
+        document.getElementById("message").textContent = "Vous avez déjà répondu.";
+        return;
+      }
 
       try {
-        const res = await fetch(apiBase, {
-          method: "POST",
-          body: formData,
+        const params = new URLSearchParams({
+          action: "submitAnswer",
+          questionId: currentQuestionId,
+          choice: choice,
+          userAgent: navigator.userAgent
         });
 
-        const text = await res.text();
-        let json;
+        const res = await fetch(`${SCRIPT_URL}?${params.toString()}`, { method: "POST" });
+        const data = await res.json();
 
-        try {
-          json = JSON.parse(text);
-        } catch {
-          throw new Error("Réponse inattendue du serveur : " + text);
-        }
-
-        if (json.status === "already_answered") {
-          document.getElementById("status").textContent = "Tu as déjà répondu à cette question.";
-        } else if (json.status === "ok") {
-          document.getElementById("status").textContent = "Réponse enregistrée !";
+        if (data.message === "Réponse enregistrée") {
+          localStorage.setItem(answeredKey, "true");
+          disableChoices("Merci pour votre réponse !");
         } else {
-          document.getElementById("status").textContent = "Erreur : réponse inconnue du serveur.";
+          throw new Error(data.error || "Réponse inconnue du serveur.");
         }
 
       } catch (err) {
-        console.error(err);
-        document.getElementById("status").textContent = "Erreur d'envoi";
+        console.error("Erreur lors de la soumission :", err);
+        document.getElementById("message").textContent = "Erreur : " + err.message;
       }
+    }
+
+    function disableChoices(msg) {
+      document.querySelectorAll("#choices button").forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = 0.6;
+        btn.style.cursor = "not-allowed";
+      });
+      document.getElementById("message").textContent = msg;
     }
 
     loadQuestion();
-    setInterval(loadQuestion, 5000); // Recharge automatiquement toutes les 5 sec
   </script>
 </body>
 </html>
