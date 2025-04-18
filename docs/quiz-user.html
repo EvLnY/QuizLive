@@ -104,6 +104,7 @@
           const formData = new URLSearchParams();
           formData.append("questionId", currentQuestion.id);
           formData.append("choice", answer);
+          formData.append("userAgent", navigator.userAgent);
 
           await fetch(`${API_URL}?action=submitAnswer`, {
             method: "POST",
@@ -118,6 +119,8 @@
 
         document.getElementById("quiz-form").innerHTML =
           "<p class='message'>Réponse envoyée. Merci !</p>";
+        document.getElementById("question").textContent =
+          stripMultiTag(currentQuestion.question) + " (Réponse déjà envoyée)";
       } catch (err) {
         console.error("Erreur lors de l’envoi de la réponse :", err);
         alert("Erreur lors de l’envoi.");
@@ -130,6 +133,21 @@
 
     pollQuestion();
     setInterval(pollQuestion, 2000);
+
+    // 🔁 Réinitialisation automatique via signal du control panel
+    let lastReset = localStorage.getItem("lastReset") || 0;
+    setInterval(() => {
+      const globalReset = localStorage.getItem("quizDisplay_resetTimestamp") || 0;
+      if (globalReset > lastReset) {
+        Object.keys(localStorage)
+          .filter(k => k.startsWith("answered_"))
+          .forEach(k => localStorage.removeItem(k));
+
+        lastReset = globalReset;
+        localStorage.setItem("lastReset", globalReset);
+        location.reload(); // Recharge la page pour forcer l'affichage actualisé
+      }
+    }, 2000);
   </script>
 </body>
 </html>
