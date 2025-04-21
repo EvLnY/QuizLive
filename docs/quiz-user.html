@@ -344,6 +344,12 @@
     let lastQuestionId = null;
     let currentQuestion = null;
     let isFirstLoad = true;
+    
+    // Pour débogage
+    const DEBUG = true;
+    function debugLog(message) {
+      if (DEBUG) console.log(`[DEBUG] ${message}`);
+    }
 
     function showLoading() {
       document.getElementById('loading').style.display = 'flex';
@@ -365,7 +371,11 @@
           return;
         }
 
+        // Vérification du statut de réinitialisation à chaque requête
+        checkForReset();
+        
         const alreadyAnswered = localStorage.getItem("answered_" + data.id);
+        debugLog(`Question ID: ${data.id}, Déjà répondu: ${alreadyAnswered ? 'Oui' : 'Non'}`);
 
         // Recharge si nouvelle question OU si verrou levé
         const shouldRender = data.id !== lastQuestionId || !alreadyAnswered;
@@ -540,42 +550,50 @@
       }
     });
 
-    // Vérification de réinitialisation
-    let lastResetToken = localStorage.getItem("lastResetToken") || "";
+    // Vérification de réinitialisation avec debug amélioré
     function checkForReset() {
-      // Vérifions les deux emplacements de stockage
-      const resetToken = localStorage.getItem("quizReset_token") || sessionStorage.getItem("quizReset_token") || "";
-
-      // En cas de changement du token
-      if (resetToken && resetToken !== lastResetToken) {
-        console.log("Réinitialisation détectée!");
-
-        // Nettoyer toutes les réponses stockées
-        Object.keys(localStorage)
-          .filter(k => k.startsWith("answered_"))
-          .forEach(k => localStorage.removeItem(k));
-
-        // Mettre à jour notre référence locale
-        lastResetToken = resetToken;
-        localStorage.setItem("lastResetToken", resetToken);
-
-        // Forcer un rechargement complet pour être sûr
-        window.location.reload();
+      // Vérification directe du timestamp de réinitialisation
+      const resetTimestamp = localStorage.getItem("quizDisplay_resetTimestamp");
+      const lastCheckedReset = localStorage.getItem("lastCheckedReset") || "0";
+      
+      debugLog(`Vérification reset: timestamp=${resetTimestamp}, dernier vérifié=${lastCheckedReset}`);
+      
+      if (resetTimestamp && parseInt(resetTimestamp) > parseInt(lastCheckedReset)) {
+        debugLog("RÉINITIALISATION DÉTECTÉE! Suppression des réponses...");
+        
+        // Enregistrer toutes les clés avant suppression pour debug
+        const answeredKeys = Object.keys(localStorage).filter(k => k.startsWith("answered_"));
+        debugLog(`Clés à supprimer: ${answeredKeys.join(", ")}`);
+        
+        // Nettoyer les réponses
+        answeredKeys.forEach(k => {
+          localStorage.removeItem(k);
+          debugLog(`Suppression: ${k}`);
+        });
+        
+        // Mettre à jour le timestamp vérifié
+        localStorage.setItem("lastCheckedReset", resetTimestamp);
+        
+        // Reset les variables de l'application
+        lastQuestionId = null;
+        isFirstLoad = true;
+        
+        // Rafraîchir l'interface immédiatement
+        debugLog("Rechargement forcé");
+        pollQuestion();
+        
         return true;
       }
       return false;
     }
 
-// Vérifier au démarrage et périodiquement
-document.addEventListener('DOMContentLoaded', function() {
-  checkForReset();
-  setInterval(checkForReset, 2000);
-});
-
     // Initialisation avec animation d'entrée uniquement au premier chargement
     document.addEventListener('DOMContentLoaded', function() {
       showLoading();
       const questionCard = document.getElementById('question-card');
+      
+      // Vérification initiale de reset
+      checkForReset();
       
       // Animation uniquement lors du premier chargement
       setTimeout(() => {
@@ -583,7 +601,15 @@ document.addEventListener('DOMContentLoaded', function() {
         
         pollQuestion();
         setInterval(pollQuestion, 2000);
+        setInterval(checkForReset, 2000);
       }, 300);
+      
+      // Affichage des infos de débogage
+      debugLog("Application initialisée");
+      debugLog(`Reset timestamp: ${localStorage.getItem("quizDisplay_resetTimestamp")}`);
+      debugLog(`Dernier vérifié: ${localStorage.getItem("lastCheckedReset")}`);
+      const answeredKeys = Object.keys(localStorage).filter(k => k.startsWith("answered_"));
+      debugLog(`Questions déjà répondues: ${answeredKeys.join(", ") || "aucune"}`);
     });
   </script>
 </body>
