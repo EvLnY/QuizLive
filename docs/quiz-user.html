@@ -319,15 +319,25 @@
       transform: translateY(0);
     }
     
-    /* Debug panel for reset token information */
-    .debug-panel {
-      display: none;
-      padding: 8px;
-      background-color: rgba(0, 0, 0, 0.1);
-      border-radius: 4px;
-      margin-top: 10px;
-      font-size: 12px;
-      color: #666;
+    /* Toast notification pour la réinitialisation */
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 10px 15px;
+      background-color: var(--primary);
+      color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      z-index: 100;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: all 0.3s ease;
+    }
+    
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
     }
   </style>
 </head>
@@ -336,6 +346,8 @@
     <h1>Quiz Interactif</h1>
   </div>
   
+  <div id="resetToast" class="toast">Quiz réinitialisé !</div>
+  
   <div class="quiz-container">
     <div class="question-card animate-in" id="question-card">
       <h2 id="question">Chargement de la question...</h2>
@@ -343,12 +355,6 @@
         <div class="loading-spinner"></div>
       </div>
       <form id="quiz-form"></form>
-    </div>
-    
-    <!-- Debug Panel -->
-    <div id="debugPanel" class="debug-panel">
-      <div>Reset Token: <span id="currentResetToken">non défini</span></div>
-      <div>Réponses: <span id="storedAnswers">-</span></div>
     </div>
   </div>
   
@@ -361,7 +367,7 @@
     let lastQuestionId = null;
     let currentQuestion = null;
     let isFirstLoad = true;
-    const DEBUG = false; // Mettre à true pour afficher le panneau de debug
+    let resetCheckInterval = null;
 
     function showLoading() {
       document.getElementById('loading').style.display = 'flex';
@@ -373,38 +379,15 @@
       document.getElementById('quiz-form').style.display = 'block';
     }
     
-    // Nouvelle fonction pour enregistrer les réponses dans le localStorage avec une clé spéciale
-    function markQuestionAsAnswered(questionId) {
-      try {
-        // Structure centralisée pour toutes les réponses
-        let answeredQuestions = JSON.parse(localStorage.getItem("quiz_answered_questions") || "{}");
-        answeredQuestions[questionId] = Date.now();
-        localStorage.setItem("quiz_answered_questions", JSON.stringify(answeredQuestions));
-        
-        // Garder aussi l'ancien format pour compatibilité
-        localStorage.setItem("answered_" + questionId, "1");
-        
-        updateDebugInfo();
-      } catch (e) {
-        console.error("Erreur dans le stockage des réponses:", e);
-      }
-    }
-    
-    // Nouvelle fonction pour vérifier si une question a déjà été répondue
-    function hasAnsweredQuestion(questionId) {
-      try {
-        // Vérifier d'abord le format centralisé
-        const answeredQuestions = JSON.parse(localStorage.getItem("quiz_answered_questions") || "{}");
-        if (answeredQuestions[questionId]) {
-          return true;
-        }
-        
-        // Sinon vérifier l'ancien format
-        return localStorage.getItem("answered_" + questionId) === "1";
-      } catch (e) {
-        console.error("Erreur lors de la vérification des réponses:", e);
-        return false;
-      }
+    // Fonction d'affichage d'une notification toast temporaire
+    function showToast(message, duration = 3000) {
+      const toast = document.getElementById('resetToast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, duration);
     }
 
     async function pollQuestion() {
@@ -417,10 +400,10 @@
           return;
         }
 
-        // Vérifier si l'utilisateur a déjà répondu à cette question
-        const alreadyAnswered = hasAnsweredQuestion(data.id);
+        // Vérifie si l'utilisateur a déjà répondu à cette question
+        const alreadyAnswered = localStorage.getItem("answered_" + data.id);
 
-        // Recharge si nouvelle question OU si la réinitialisation a été effectuée
+        // Recharge si nouvelle question OU si verrou levé
         const shouldRender = data.id !== lastQuestionId || !alreadyAnswered;
         if (!shouldRender) return;
 
@@ -444,7 +427,7 @@
         const isMultiple = data.question.includes("::multi");
         questionElem.textContent = stripMultiTag(data.question);
         
-        // Ne rien changer si utilisateur est en train de cocher des réponses
+        // 🔒 Ne rien changer si utilisateur est en train de cocher des réponses
         const alreadySelected = form.querySelector('input[name="answer"]:checked');
         if (form.children.length > 0 && alreadySelected) return;
 
@@ -511,8 +494,6 @@
         
         // Après le premier chargement réussi, on change le statut
         isFirstLoad = false;
-        
-        updateDebugInfo();
 
       } catch (err) {
         console.error("Erreur lors de la récupération de la question :", err);
@@ -565,8 +546,7 @@
           });
         }
 
-        // Marquer la question comme répondue avec la nouvelle fonction
-        markQuestionAsAnswered(currentQuestion.id);
+        localStorage.setItem("answered_" + currentQuestion.id, "1");
         
         const form = document.getElementById("quiz-form");
         form.innerHTML = "<p class='message'>Réponse envoyée avec succès !</p>";
@@ -596,99 +576,100 @@
       }
     });
 
-    // SYSTÈME DE RÉINITIALISATION AMÉLIORÉ
+    // PARTIE RÉINITIALISATION - AMÉLIORÉE
     
-    // 1. Fonction pour récupérer le token de réinitialisation
-    function getResetToken() {
-      const fromLs = localStorage.getItem("quizReset_token");
-      const fromSs = sessionStorage.getItem("quizReset_token");
-      
-      // Essayer de récupérer le token depuis l'URL pour GitHub Pages
-      const urlParams = new URLSearchParams(window.location.search);
-      const fromUrl = urlParams.get("reset_token");
-      
-      // Prendre le token disponible, avec priorité à celui de l'URL
-      return fromUrl || fromLs || fromSs || "";
-    }
-    
-    // 2. Fonction pour nettoyer toutes les réponses en cas de réinitialisation
-    function clearAllAnswers() {
-      console.log("Nettoyage de toutes les réponses!");
-      
-      // Nettoyer la structure centralisée
-      localStorage.removeItem("quiz_answered_questions");
-      
-      // Nettoyer les anciennes entrées aussi
-      Object.keys(localStorage)
-        .filter(k => k.startsWith("answered_"))
-        .forEach(k => localStorage.removeItem(k));
-      
-      // Forcer le rechargement de la question actuelle
-      lastQuestionId = null;
-    }
-    
-    // 3. Fonction pour vérifier les réinitialisations
-    let lastResetToken = localStorage.getItem("lastResetToken") || "";
+    // Stocke la dernière valeur connue du token de reset
+    let lastKnownResetToken = "";
+
+    // Vérification de réinitialisation par plusieurs méthodes
     function checkForReset() {
-      const currentToken = getResetToken();
+      // 1. Vérifier le paramètre d'URL pour réinitialisation immédiate
+      const urlParams = new URLSearchParams(window.location.search);
+      const resetParam = urlParams.get('reset');
       
-      // Si on a un token et qu'il est différent du dernier connu
-      if (currentToken && currentToken !== lastResetToken) {
-        console.log("Réinitialisation détectée! Nouveau token:", currentToken);
+      // 2. Vérifier les tokens de stockage local
+      const storageToken = localStorage.getItem("quizReset_token") || 
+                          sessionStorage.getItem("quizReset_token") || "";
+                          
+      // 3. Vérifier si le timestamp de réinitialisation a changé (compatibilité)
+      const resetTimestamp = localStorage.getItem("quizDisplay_resetTimestamp");
+      const storedTimestamp = localStorage.getItem("lastKnownResetTimestamp") || "0";
+      
+      // Un reset est détecté si:
+      // - Un paramètre reset est présent dans l'URL, OU
+      // - Le token de reset a changé depuis la dernière vérification, OU
+      // - Le timestamp de reset a changé depuis la dernière vérification
+      const isResetDetected = 
+        resetParam || 
+        (storageToken && storageToken !== lastKnownResetToken) ||
+        (resetTimestamp && resetTimestamp !== storedTimestamp);
+      
+      if (isResetDetected) {
+        console.log("Réinitialisation détectée");
         
-        // Nettoyer toutes les réponses
-        clearAllAnswers();
+        // Si le reset vient de l'URL, stocker le token comme référence
+        if (resetParam) {
+          localStorage.setItem("quizReset_token", resetParam);
+          sessionStorage.setItem("quizReset_token", resetParam);
+          
+          // Nettoyer l'URL pour éviter des réinitialisations multiples au refresh
+          if (window.history && window.history.replaceState) {
+            const cleanUrl = window.location.href.split('?')[0];
+            window.history.replaceState({}, document.title, cleanUrl);
+          }
+        }
         
-        // Mettre à jour notre référence locale
-        lastResetToken = currentToken;
-        localStorage.setItem("lastResetToken", currentToken);
+        // Mise à jour des références locales
+        if (storageToken) {
+          lastKnownResetToken = storageToken;
+        }
         
-        // Recharger la question
+        if (resetTimestamp) {
+          localStorage.setItem("lastKnownResetTimestamp", resetTimestamp);
+        }
+        
+        // Effacer toutes les réponses enregistrées
+        const answeredKeys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith("answered_")) {
+            answeredKeys.push(key);
+          }
+        }
+        
+        answeredKeys.forEach(key => localStorage.removeItem(key));
+        
+        // Notification à l'utilisateur
+        showToast("Quiz réinitialisé !");
+        
+        // Rafraîchir l'affichage de la question
         pollQuestion();
         
         return true;
       }
+      
       return false;
     }
-    
-    // Mise à jour du panneau de debug
-    function updateDebugInfo() {
-      if (!DEBUG) return;
-      
-      document.getElementById("debugPanel").style.display = "block";
-      document.getElementById("currentResetToken").textContent = getResetToken() || "non défini";
-      
-      try {
-        const answered = JSON.parse(localStorage.getItem("quiz_answered_questions") || "{}");
-        const count = Object.keys(answered).length;
-        document.getElementById("storedAnswers").textContent = 
-          `${count} question(s) répondue(s)`;
-      } catch (e) {
-        document.getElementById("storedAnswers").textContent = "Erreur";
-      }
-    }
 
-    // Initialisation
+    // Initialisation avec animation d'entrée uniquement au premier chargement
     document.addEventListener('DOMContentLoaded', function() {
-      // Vérification de la réinitialisation au démarrage
-      checkForReset();
-      setInterval(checkForReset, 2000);
-      
-      // Affichage du panneau de debug si activé
-      if (DEBUG) {
-        document.getElementById("debugPanel").style.display = "block";
-        setInterval(updateDebugInfo, 2000);
-      }
-      
-      // Animation du chargement initial
       showLoading();
       const questionCard = document.getElementById('question-card');
       
+      // Vérification immédiate d'une demande de réinitialisation
+      checkForReset();
+      
+      // Animation uniquement lors du premier chargement
       setTimeout(() => {
         questionCard.classList.add('show');
         
         pollQuestion();
+        
+        // Intervalle pour la mise à jour des questions
         setInterval(pollQuestion, 2000);
+        
+        // Intervalle pour la vérification des réinitialisations
+        setInterval(checkForReset, 2000);
       }, 300);
     });
   </script>
