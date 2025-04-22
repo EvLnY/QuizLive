@@ -582,73 +582,91 @@
     let lastKnownResetToken = "";
 
     // Vérification de réinitialisation par plusieurs méthodes
+    // Vérification de réinitialisation par plusieurs méthodes
     function checkForReset() {
       // 1. Vérifier le paramètre d'URL pour réinitialisation immédiate
       const urlParams = new URLSearchParams(window.location.search);
       const resetParam = urlParams.get('reset');
-      
+
       // 2. Vérifier les tokens de stockage local
       const storageToken = localStorage.getItem("quizReset_token") || 
-                          sessionStorage.getItem("quizReset_token") || "";
-                          
+                           sessionStorage.getItem("quizReset_token") || "";
+
       // 3. Vérifier si le timestamp de réinitialisation a changé (compatibilité)
       const resetTimestamp = localStorage.getItem("quizDisplay_resetTimestamp");
       const storedTimestamp = localStorage.getItem("lastKnownResetTimestamp") || "0";
-      
+
+      // 4. AJOUT: Vérification directe sur le serveur
+      fetch(`${API_URL}?action=checkResetStatus&cacheBuster=${Date.now()}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data && data.resetTimestamp && data.resetTimestamp !== storedTimestamp) {
+            // Reset côté serveur détecté
+            localStorage.setItem("lastKnownResetTimestamp", data.resetTimestamp);
+            resetAllAnswers();
+            showToast("Quiz réinitialisé par l'administrateur!");
+            pollQuestion();
+            return true;
+          }
+        })
+        .catch(err => console.error("Erreur lors de la vérification du reset:", err));
+
       // Un reset est détecté si:
-      // - Un paramètre reset est présent dans l'URL, OU
-      // - Le token de reset a changé depuis la dernière vérification, OU
-      // - Le timestamp de reset a changé depuis la dernière vérification
       const isResetDetected = 
         resetParam || 
         (storageToken && storageToken !== lastKnownResetToken) ||
         (resetTimestamp && resetTimestamp !== storedTimestamp);
-      
+
       if (isResetDetected) {
         console.log("Réinitialisation détectée");
-        
+
         // Si le reset vient de l'URL, stocker le token comme référence
         if (resetParam) {
           localStorage.setItem("quizReset_token", resetParam);
           sessionStorage.setItem("quizReset_token", resetParam);
-          
+
           // Nettoyer l'URL pour éviter des réinitialisations multiples au refresh
           if (window.history && window.history.replaceState) {
             const cleanUrl = window.location.href.split('?')[0];
             window.history.replaceState({}, document.title, cleanUrl);
           }
         }
-        
+
         // Mise à jour des références locales
         if (storageToken) {
           lastKnownResetToken = storageToken;
         }
-        
+
         if (resetTimestamp) {
           localStorage.setItem("lastKnownResetTimestamp", resetTimestamp);
         }
-        
-        // Effacer toutes les réponses enregistrées
-        const answeredKeys = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && key.startsWith("answered_")) {
-            answeredKeys.push(key);
-          }
-        }
-        
-        answeredKeys.forEach(key => localStorage.removeItem(key));
-        
+
+        resetAllAnswers();
+
         // Notification à l'utilisateur
         showToast("Quiz réinitialisé !");
-        
+
         // Rafraîchir l'affichage de la question
         pollQuestion();
-        
+
         return true;
       }
-      
+
       return false;
+    }
+
+    // Fonction d'aide pour centraliser le code de réinitialisation
+    function resetAllAnswers() {
+      // Effacer toutes les réponses enregistrées
+      const answeredKeys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("answered_")) {
+          answeredKeys.push(key);
+        }
+      }
+
+      answeredKeys.forEach(key => localStorage.removeItem(key));
     }
 
     // Initialisation avec animation d'entrée uniquement au premier chargement
