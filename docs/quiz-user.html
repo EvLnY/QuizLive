@@ -502,66 +502,66 @@
     }
 
     document.getElementById("quiz-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      if (!currentQuestion) return;
+  e.preventDefault();
+  if (!currentQuestion) return;
 
-      const submitBtn = e.target.querySelector("button[type='submit']");
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.textContent = "Envoi en cours...";
-        submitBtn.style.opacity = "0.7";
-      }
+  const submitBtn = e.target.querySelector("button[type='submit']");
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Envoi en cours...";
+    submitBtn.style.opacity = "0.7";
+  }
 
-      const isMultiple = currentQuestion.question.includes("::multi");
-      const selected = isMultiple
-        ? Array.from(document.querySelectorAll('input[name="answer"]:checked')).map(input => input.value)
-        : [document.querySelector('input[name="answer"]:checked')?.value];
+  const isMultiple = currentQuestion.question.includes("::multi");
+  const selected = isMultiple
+    ? Array.from(document.querySelectorAll('input[name="answer"]:checked')).map(input => input.value)
+    : [document.querySelector('input[name="answer"]:checked')?.value];
 
-      if (selected.length === 0 || selected.includes(undefined)) {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = isMultiple ? "Envoyer mes réponses" : "Envoyer ma réponse";
-          submitBtn.style.opacity = "1";
-        }
-        document.getElementById('question-card').classList.add('shake');
-        setTimeout(() => {
-          document.getElementById('question-card').classList.remove('shake');
-        }, 500);
-        return;
-      }
+  if (selected.length === 0 || selected.includes(undefined)) {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = isMultiple ? "Envoyer mes réponses" : "Envoyer ma réponse";
+      submitBtn.style.opacity = "1";
+    }
+    document.getElementById('question-card').classList.add('shake');
+    setTimeout(() => {
+      document.getElementById('question-card').classList.remove('shake');
+    }, 500);
+    return;
+  }
 
-      try {
-        for (let answer of selected) {
-          const formData = new URLSearchParams();
-          formData.append("questionId", currentQuestion.id);
-          formData.append("choice", answer);
-          formData.append("userAgent", navigator.userAgent);
+  try {
+    for (let answer of selected) {
+      const formData = new URLSearchParams();
+      formData.append("questionId", currentQuestion.id);
+      formData.append("choice", answer);
+      formData.append("userAgent", navigator.userAgent); // ✅ ENVOI DU USER AGENT
 
-          await fetch(`${API_URL}?action=submitAnswer`, {
-            method: "POST",
-            body: formData,
-            headers: {
-              "Content-Type": "application/x-www-form-urlencoded",
-            },
-          });
-        }
+      await fetch(`${API_URL}?action=submitAnswer`, {
+        method: "POST",
+        body: formData,
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      });
+    }
 
-        localStorage.setItem("answered_" + currentQuestion.id, "1");
-        
-        const form = document.getElementById("quiz-form");
-        form.innerHTML = "<p class='message'>Réponse envoyée avec succès !</p>";
-        
-        const questionText = stripMultiTag(currentQuestion.question);
-        document.getElementById("question").innerHTML = `${questionText} <span class="answered-tag">Répondu</span>`;
+    localStorage.setItem("answered_" + currentQuestion.id, "1");
 
-      } catch (err) {
-        console.error("Erreur lors de l'envoi de la réponse :", err);
-        document.getElementById("quiz-form").innerHTML = 
-          `<p class='message' style='background: rgba(239, 68, 68, 0.1); color: var(--error);'>
-            Erreur lors de l'envoi. Veuillez réessayer.
-          </p>`;
-      }
-    });
+    const form = document.getElementById("quiz-form");
+    form.innerHTML = "<p class='message'>Réponse envoyée avec succès !</p>";
+
+    const questionText = stripMultiTag(currentQuestion.question);
+    document.getElementById("question").innerHTML = `${questionText} <span class="answered-tag">Répondu</span>`;
+
+  } catch (err) {
+    console.error("Erreur lors de l'envoi de la réponse :", err);
+    document.getElementById("quiz-form").innerHTML = 
+      `<p class='message' style='background: rgba(239, 68, 68, 0.1); color: var(--error);'>
+        Erreur lors de l'envoi. Veuillez réessayer.
+      </p>`;
+  }
+});
 
     function stripMultiTag(questionText) {
       return questionText.replace("::multi", "").trim();
