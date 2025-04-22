@@ -24,6 +24,7 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
     }
     
     body {
@@ -42,9 +43,10 @@
       color: white;
       padding: 1.5rem;
       text-align: center;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 20px -5px rgba(0, 71, 80, 0.3);
       position: relative;
       overflow: hidden;
+      z-index: 10;
     }
     
     .header::before {
@@ -54,22 +56,22 @@
       left: -50%;
       width: 200%;
       height: 200%;
-      background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 80%);
-      animation: pulse 15s infinite;
+      background: radial-gradient(ellipse at center, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 70%);
+      animation: wave 12s infinite linear;
+      z-index: 1;
     }
     
-    @keyframes pulse {
-      0% { transform: scale(1); opacity: 0.3; }
-      50% { transform: scale(1.05); opacity: 0.6; }
-      100% { transform: scale(1); opacity: 0.3; }
+    @keyframes wave {
+      0% { transform: translate(-5%, -5%) rotate(0deg); }
+      100% { transform: translate(-5%, -5%) rotate(360deg); }
     }
     
     .header h1 {
       font-size: 1.5rem;
       font-weight: 700;
-      margin: 0;
       position: relative;
-      z-index: 1;
+      z-index: 2;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
     }
     
     .quiz-container {
@@ -82,13 +84,20 @@
     
     .question-card {
       background: var(--card);
-      border-radius: 16px;
+      border-radius: 20px;
       padding: 1.5rem;
       margin-bottom: 1.5rem;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1);
       position: relative;
       overflow: hidden;
-      transition: transform var(--animation-speed) ease;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    
+    .question-card.show {
+      opacity: 1;
+      transform: translateY(0);
     }
     
     .question-card::after {
@@ -96,161 +105,200 @@
       position: absolute;
       bottom: 0;
       right: 0;
-      width: 60px;
-      height: 60px;
-      background: linear-gradient(135deg, transparent 50%, rgba(0, 206, 124, 0.1) 50%);
-      border-radius: 0 0 16px 0;
+      width: 100px;
+      height: 100px;
+      background: linear-gradient(135deg, transparent 50%, rgba(0, 206, 124, 0.08) 50%);
+      border-radius: 0 0 20px 0;
+      z-index: 1;
     }
     
-    .question-card:hover {
-      transform: translateY(-3px);
+    .question-number {
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      opacity: 0;
+      transform: scale(0);
+      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      animation-delay: 0.3s;
+      font-size: 16px;
+    }
+    
+    @keyframes popIn {
+      0% { transform: scale(0); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
     }
     
     #question {
-      font-size: 1.25rem;
+      font-size: 1.3rem;
       font-weight: 600;
       margin-bottom: 1.5rem;
       line-height: 1.4;
       color: var(--text);
+      position: relative;
+      z-index: 2;
     }
     
-    .choice-container {
-      margin: 1rem 0;
+    .choices-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 1.5rem;
     }
     
-    .choice-label {
-      display: flex;
-      align-items: center;
-      padding: 1rem;
-      border-radius: 12px;
-      background: rgba(199, 241, 214, 0.5);
-      border: 2px solid transparent;
-      transition: all var(--animation-speed) ease;
-      cursor: pointer;
+    .choice-btn {
+      border: none;
+      background: linear-gradient(to right, rgba(199, 241, 214, 0.5), rgba(138, 224, 176, 0.3));
+      border-radius: 16px;
+      padding: 16px;
+      text-align: left;
+      font-size: 1rem;
+      color: var(--text);
       position: relative;
       overflow: hidden;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
     }
     
-    .choice-label:hover {
-      background: rgba(138, 224, 176, 0.3);
-      transform: translateX(3px);
-    }
-    
-    .choice-input {
-      appearance: none;
-      width: 24px;
-      height: 24px;
-      border: 2px solid var(--accent);
-      margin-right: 1rem;
-      position: relative;
-      transition: all var(--animation-speed) ease;
-    }
-    
-    .choice-radio {
-      border-radius: 50%;
-    }
-    
-    .choice-checkbox {
-      border-radius: 6px;
-    }
-    
-    .choice-input:checked {
-      border-color: var(--primary);
-      background-color: var(--primary);
-    }
-    
-    .choice-radio:checked::after {
+    .choice-btn::before {
       content: "";
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 1;
+    }
+    
+    .choice-btn.selected::before {
+      opacity: 1;
+    }
+    
+    .choice-btn span {
+      position: relative;
+      z-index: 2;
+      transition: all 0.3s ease;
+      padding-left: 10px;
+    }
+    
+    .choice-btn.selected span {
+      color: white;
+      transform: translateX(5px);
+    }
+    
+    .choice-btn .choice-indicator {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid var(--primary);
+      margin-right: 12px;
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+    }
+    
+    .choice-btn.selected .choice-indicator {
+      background: white;
+      border-color: white;
+    }
+    
+    .choice-btn.selected .choice-indicator::after {
+      content: "";
       width: 12px;
       height: 12px;
-      background: white;
       border-radius: 50%;
-    }
-    
-    .choice-checkbox:checked::after {
-      content: "✓";
+      background: var(--primary);
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: white;
-      font-size: 14px;
-      font-weight: bold;
+      animation: pulse 1.5s infinite;
     }
     
-    .choice-text {
-      font-size: 1rem;
-      flex-grow: 1;
+    @keyframes pulse {
+      0% { transform: scale(0.8); opacity: 1; }
+      70% { transform: scale(1.2); opacity: 0.7; }
+      100% { transform: scale(0.8); opacity: 1; }
+    }
+    
+    .choice-btn .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.7);
+      transform: scale(0);
+      animation: ripple 0.6s linear;
+      z-index: 0;
+    }
+    
+    @keyframes ripple {
+      to {
+        transform: scale(3);
+        opacity: 0;
+      }
     }
     
     .submit-btn {
       background: var(--primary);
       color: white;
       border: none;
-      padding: 1rem 1.5rem;
+      padding: 16px;
       font-size: 1.1rem;
       font-weight: 600;
-      border-radius: 12px;
+      border-radius: 16px;
       cursor: pointer;
       width: 100%;
-      box-shadow: 0 4px 6px rgba(0, 206, 124, 0.25);
-      transition: all var(--animation-speed) ease;
+      margin-top: 20px;
       position: relative;
       overflow: hidden;
-      margin-top: 1rem;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 206, 124, 0.25);
+      transform: translateY(0);
+      opacity: 0;
+      animation: fadeInUp 0.5s ease forwards;
+      animation-delay: 0.6s;
     }
     
-    .submit-btn:hover {
-      background: var(--primary-dark);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 12px rgba(0, 206, 124, 0.3);
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     
     .submit-btn:active {
-      transform: translateY(1px);
+      transform: scale(0.98);
     }
     
-    .submit-btn::after {
+    .submit-btn::before {
       content: "";
       position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 5px;
-      height: 5px;
-      background: rgba(255, 255, 255, 0.5);
-      opacity: 0;
-      border-radius: 100%;
-      transform: translate(-50%, -50%) scale(1);
-      transition: all 0.6s ease-out;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.3), transparent);
+      animation: shine 3s infinite;
     }
     
-    .submit-btn:focus::after {
-      opacity: 1;
-      transform: translate(-50%, -50%) scale(50);
-      transition: all 0.6s ease-out;
-    }
-    
-    .message {
-      padding: 1rem;
-      border-radius: 12px;
-      font-weight: 600;
-      text-align: center;
-      animation: fadeIn 0.5s ease;
-      background: rgba(0, 206, 124, 0.1);
-      color: var(--success);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .message::before {
-      content: "✓";
-      margin-right: 8px;
-      font-size: 1.2rem;
+    @keyframes shine {
+      0% { left: -100%; }
+      20% { left: 100%; }
+      100% { left: 100%; }
     }
     
     .loading {
@@ -258,86 +306,148 @@
       align-items: center;
       justify-content: center;
       min-height: 200px;
+      flex-direction: column;
     }
     
     .loading-spinner {
-      width: 48px;
-      height: 48px;
-      border: 5px solid rgba(0, 206, 124, 0.2);
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(0, 206, 124, 0.1);
       border-top-color: var(--primary);
       border-radius: 50%;
-      animation: spin 1s linear infinite;
+      animation: spinner 0.8s linear infinite;
     }
     
-    @keyframes spin {
+    .loading-text {
+      margin-top: 15px;
+      color: var(--text-light);
+      font-size: 0.9rem;
+    }
+    
+    @keyframes spinner {
       to { transform: rotate(360deg); }
+    }
+    
+    .message {
+      padding: 16px;
+      border-radius: 16px;
+      font-weight: 600;
+      text-align: center;
+      animation: fadeIn 0.5s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      background: var(--tertiary);
+      color: var(--primary-dark);
+    }
+    
+    .message.success {
+      background: linear-gradient(to right, rgba(0, 206, 124, 0.1), rgba(0, 206, 124, 0.2));
+    }
+    
+    .message.success::before {
+      content: "";
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      background: var(--primary);
+      border-radius: 50%;
+      left: 15px;
+      z-index: 1;
+      opacity: 0.2;
+    }
+    
+    .message.success::after {
+      content: "✓";
+      font-size: 1.2rem;
+      color: var(--primary);
+      position: absolute;
+      left: 23px;
+      z-index: 2;
+    }
+    
+    .message.success span {
+      margin-left: 25px;
+    }
+    
+    .answered-tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--success);
+      color: white;
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      margin-left: 10px;
+      animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    @keyframes bounceIn {
+      0% { transform: scale(0); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+    
+    .footer {
+      text-align: center;
+      padding: 16px;
+      color: var(--primary-dark);
+      font-size: 0.9rem;
+      background-color: var(--tertiary);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
+    }
+    
+    .footer::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(to right, transparent, var(--primary), transparent);
+    }
+    
+    .shake {
+      animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-1px, 0, 0); }
+      20%, 80% { transform: translate3d(2px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+      40%, 60% { transform: translate3d(4px, 0, 0); }
+    }
+    
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      padding: 12px 20px;
+      background: var(--primary-dark);
+      color: white;
+      border-radius: 30px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+      z-index: 100;
+      opacity: 0;
+      transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      text-align: center;
+      min-width: 200px;
+    }
+    
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
     }
     
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
-    }
-    
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      20%, 60% { transform: translateX(-5px); }
-      40%, 80% { transform: translateX(5px); }
-    }
-    
-    .shake {
-      animation: shake 0.5s ease;
-    }
-    
-    .answered-tag {
-      display: inline-block;
-      background: var(--success);
-      color: white;
-      padding: 0.25rem 0.5rem;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      margin-left: 0.5rem;
-      animation: fadeIn 0.3s ease;
-    }
-    
-    .footer {
-      text-align: center;
-      padding: 1rem;
-      color: var(--primary-dark);
-      font-size: 0.8rem;
-      background-color: var(--tertiary);
-    }
-
-    /* Animation classes - only applied on initial load and question changes */
-    .animate-in {
-      opacity: 0;
-      transform: translateY(20px);
-      transition: all 0.5s ease;
-    }
-    
-    .animate-in.show {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    
-    /* Toast notification pour la réinitialisation */
-    .toast {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 10px 15px;
-      background-color: var(--primary);
-      color: white;
-      border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      z-index: 100;
-      opacity: 0;
-      transform: translateY(-10px);
-      transition: all 0.3s ease;
-    }
-    
-    .toast.show {
-      opacity: 1;
-      transform: translateY(0);
     }
   </style>
 </head>
@@ -349,12 +459,14 @@
   <div id="resetToast" class="toast">Quiz réinitialisé !</div>
   
   <div class="quiz-container">
-    <div class="question-card animate-in" id="question-card">
+    <div class="question-card" id="question-card">
+      <div class="question-number" id="question-number">?</div>
       <h2 id="question">Chargement de la question...</h2>
       <div id="loading" class="loading">
         <div class="loading-spinner"></div>
+        <div class="loading-text">Chargement du quiz...</div>
       </div>
-      <form id="quiz-form"></form>
+      <div id="quiz-form"></div>
     </div>
   </div>
   
@@ -368,6 +480,7 @@
     let currentQuestion = null;
     let isFirstLoad = true;
     let resetCheckInterval = null;
+    let selectedChoices = [];
 
     function showLoading() {
       document.getElementById('loading').style.display = 'flex';
@@ -390,9 +503,32 @@
       }, duration);
     }
 
+    // Fonction pour créer l'effet d'ondulation sur les boutons
+    function createRipple(event, button) {
+      const circle = document.createElement("span");
+      const diameter = Math.max(button.clientWidth, button.clientHeight);
+      const radius = diameter / 2;
+      
+      circle.style.width = circle.style.height = `${diameter}px`;
+      circle.style.left = `${event.clientX - button.getBoundingClientRect().left - radius}px`;
+      circle.style.top = `${event.clientY - button.getBoundingClientRect().top - radius}px`;
+      circle.classList.add("ripple");
+      
+      const ripple = button.querySelector(".ripple");
+      if (ripple) {
+        ripple.remove();
+      }
+      
+      button.appendChild(circle);
+      
+      setTimeout(() => {
+        circle.remove();
+      }, 600);
+    }
+
     async function pollQuestion() {
       try {
-        const res = await fetch(`${API_URL}?action=getQuestion`);
+        const res = await fetch(`${API_URL}?action=getQuestion&cacheBuster=${Date.now()}`);
         const data = await res.json();
 
         if (!data || data.id === "") {
@@ -412,25 +548,38 @@
         
         lastQuestionId = data.id;
         currentQuestion = data;
+        selectedChoices = [];
+
+        // Extraire le numéro de question pour l'affichage
+        let questionNumber = "";
+        if (data.id) {
+          const matches = data.id.match(/(\d+)$/);
+          if (matches && matches[1]) {
+            questionNumber = matches[1];
+          }
+        }
+        
+        document.getElementById('question-number').textContent = questionNumber ? questionNumber : "?";
 
         const questionElem = document.getElementById("question");
-        const form = document.getElementById("quiz-form");
+        const formContainer = document.getElementById("quiz-form");
         hideLoading();
 
         if (alreadyAnswered) {
           const questionText = stripMultiTag(data.question);
           questionElem.innerHTML = `${questionText} <span class="answered-tag">Répondu</span>`;
-          form.innerHTML = "<p class='message'>Vous avez déjà répondu à cette question.</p>";
+          formContainer.innerHTML = "<div class='message success'><span>Vous avez déjà répondu à cette question.</span></div>";
           return;
         }
 
         const isMultiple = data.question.includes("::multi");
         questionElem.textContent = stripMultiTag(data.question);
         
-        // 🔒 Ne rien changer si utilisateur est en train de cocher des réponses
-        const alreadySelected = form.querySelector('input[name="answer"]:checked');
-        if (form.children.length > 0 && alreadySelected) return;
-
+        // Afficher "Question n°X" comme titre si pas déjà inclus
+        if (questionNumber && !questionElem.textContent.includes(`Question n°${questionNumber}`)) {
+          questionElem.textContent = `Question n°${questionNumber}: ${questionElem.textContent}`;
+        }
+        
         // Animation seulement si c'est une nouvelle question
         if (isNewQuestion) {
           document.getElementById('question-card').classList.add('shake');
@@ -439,61 +588,70 @@
           }, 500);
         }
 
-        form.innerHTML = "";
+        formContainer.innerHTML = "";
+        const choicesGrid = document.createElement("div");
+        choicesGrid.className = "choices-grid";
 
         data.choices.forEach((choice, index) => {
-          const div = document.createElement("div");
-          div.className = "choice-container";
-          div.innerHTML = `
-            <label class="choice-label">
-              <input type="${isMultiple ? "checkbox" : "radio"}" 
-                     class="choice-input ${isMultiple ? 'choice-checkbox' : 'choice-radio'}" 
-                     name="answer" 
-                     value="${choice}" />
-              <span class="choice-text">${choice}</span>
-            </label>
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "choice-btn";
+          btn.dataset.value = choice;
+          btn.innerHTML = `
+            <div class="choice-indicator"></div>
+            <span>${choice}</span>
           `;
           
-          // Animation d'entrée séquentielle seulement lors du premier chargement ou nouvelle question
           if (isFirstLoad || isNewQuestion) {
-            div.style.opacity = "0";
-            div.style.transform = "translateX(20px)";
-            div.style.transition = "all 0.3s ease";
+            btn.style.opacity = "0";
+            btn.style.transform = "translateY(20px)";
           }
           
-          form.appendChild(div);
+          btn.addEventListener("click", (e) => {
+            if (window.navigator.vibrate) window.navigator.vibrate(50);
+            createRipple(e, btn);
+            
+            if (isMultiple) {
+              btn.classList.toggle("selected");
+              if (btn.classList.contains("selected")) {
+                selectedChoices.push(choice);
+              } else {
+                selectedChoices = selectedChoices.filter(c => c !== choice);
+              }
+            } else {
+              document.querySelectorAll(".choice-btn").forEach(b => b.classList.remove("selected"));
+              btn.classList.add("selected");
+              selectedChoices = [choice];
+            }
+          });
           
-          // Appliquer les animations seulement au premier chargement ou nouvelle question
+          choicesGrid.appendChild(btn);
+          
           if (isFirstLoad || isNewQuestion) {
             setTimeout(() => {
-              div.style.opacity = "1";
-              div.style.transform = "translateX(0)";
-            }, 100 + (index * 80));
+              btn.style.opacity = "1";
+              btn.style.transform = "translateY(0)";
+              btn.style.transition = "all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+              btn.style.transitionDelay = `${index * 0.1}s`;
+            }, 100);
           }
         });
+        
+        formContainer.appendChild(choicesGrid);
 
         const submitButton = document.createElement("button");
-        submitButton.type = "submit";
+        submitButton.type = "button";
         submitButton.className = "submit-btn";
         submitButton.textContent = isMultiple ? "Envoyer mes réponses" : "Envoyer ma réponse";
         
-        // Animation seulement lors du premier chargement ou nouvelle question
-        if (isFirstLoad || isNewQuestion) {
-          submitButton.style.opacity = "0";
-        }
-        
-        form.appendChild(submitButton);
-        
-        // Appliquer l'animation seulement au premier chargement ou nouvelle question
-        if (isFirstLoad || isNewQuestion) {
-          setTimeout(() => {
-            submitButton.style.opacity = "1";
-            submitButton.style.transition = "opacity 0.3s ease";
-          }, 100 + (data.choices.length * 80));
-        }
+        submitButton.addEventListener("click", submitAnswers);
+        formContainer.appendChild(submitButton);
         
         // Après le premier chargement réussi, on change le statut
         isFirstLoad = false;
+        
+        // S'assurer que la carte est visible
+        document.getElementById('question-card').classList.add('show');
 
       } catch (err) {
         console.error("Erreur lors de la récupération de la question :", err);
@@ -501,87 +659,73 @@
       }
     }
 
-    document.getElementById("quiz-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  if (!currentQuestion) return;
+    async function submitAnswers() {
+      if (!currentQuestion || selectedChoices.length === 0) {
+        document.getElementById('question-card').classList.add('shake');
+        setTimeout(() => {
+          document.getElementById('question-card').classList.remove('shake');
+        }, 500);
+        return;
+      }
 
-  const submitBtn = e.target.querySelector("button[type='submit']");
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.textContent = "Envoi en cours...";
-    submitBtn.style.opacity = "0.7";
-  }
+      const submitBtn = document.querySelector(".submit-btn");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Envoi en cours...";
+      submitBtn.style.opacity = "0.7";
 
-  const isMultiple = currentQuestion.question.includes("::multi");
-  const selected = isMultiple
-    ? Array.from(document.querySelectorAll('input[name="answer"]:checked')).map(input => input.value)
-    : [document.querySelector('input[name="answer"]:checked')?.value];
+      try {
+        for (let answer of selectedChoices) {
+          const formData = new URLSearchParams();
+          formData.append("questionId", currentQuestion.id);
+          formData.append("choice", answer);
+          formData.append("userAgent", navigator.userAgent); // Envoi du User Agent
 
-  if (selected.length === 0 || selected.includes(undefined)) {
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.textContent = isMultiple ? "Envoyer mes réponses" : "Envoyer ma réponse";
-      submitBtn.style.opacity = "1";
+          await fetch(`${API_URL}?action=submitAnswer`, {
+            method: "POST",
+            body: formData,
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+          });
+        }
+
+        localStorage.setItem("answered_" + currentQuestion.id, "1");
+
+        const formContainer = document.getElementById("quiz-form");
+        formContainer.innerHTML = "<div class='message success'><span>Réponse envoyée avec succès !</span></div>";
+
+        const questionText = stripMultiTag(currentQuestion.question);
+        
+        // Maintenir le format "Question n°X" si présent dans l'affichage final
+        let displayText = questionText;
+        const questionNumberMatch = displayText.match(/^Question n°(\d+):/);
+        if (!questionNumberMatch && currentQuestion.id) {
+          const idMatch = currentQuestion.id.match(/(\d+)$/);
+          if (idMatch && idMatch[1]) {
+            displayText = `Question n°${idMatch[1]}: ${displayText}`;
+          }
+        }
+        
+        document.getElementById("question").innerHTML = `${displayText} <span class="answered-tag">Répondu</span>`;
+
+      } catch (err) {
+        console.error("Erreur lors de l'envoi de la réponse :", err);
+        document.getElementById("quiz-form").innerHTML = 
+          `<div class='message' style='background: rgba(239, 68, 68, 0.1); color: var(--error);'>
+            Erreur lors de l'envoi. Veuillez réessayer.
+          </div>`;
+      }
     }
-    document.getElementById('question-card').classList.add('shake');
-    setTimeout(() => {
-      document.getElementById('question-card').classList.remove('shake');
-    }, 500);
-    return;
-  }
-
-  try {
-    for (let answer of selected) {
-      const formData = new URLSearchParams();
-      formData.append("questionId", currentQuestion.id);
-      formData.append("choice", answer);
-      formData.append("userAgent", navigator.userAgent); // ✅ ENVOI DU USER AGENT
-
-      await fetch(`${API_URL}?action=submitAnswer`, {
-        method: "POST",
-        body: formData,
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      });
-    }
-
-    localStorage.setItem("answered_" + currentQuestion.id, "1");
-
-    const form = document.getElementById("quiz-form");
-    form.innerHTML = "<p class='message'>Réponse envoyée avec succès !</p>";
-
-    const questionText = stripMultiTag(currentQuestion.question);
-    document.getElementById("question").innerHTML = `${questionText} <span class="answered-tag">Répondu</span>`;
-
-  } catch (err) {
-    console.error("Erreur lors de l'envoi de la réponse :", err);
-    document.getElementById("quiz-form").innerHTML = 
-      `<p class='message' style='background: rgba(239, 68, 68, 0.1); color: var(--error);'>
-        Erreur lors de l'envoi. Veuillez réessayer.
-      </p>`;
-  }
-});
 
     function stripMultiTag(questionText) {
       return questionText.replace("::multi", "").trim();
     }
-
-    // Feedback tactile pour interactions sur mobile
-    document.addEventListener('click', function(e) {
-      if (e.target.closest('.choice-label')) {
-        if (window.navigator.vibrate) {
-          window.navigator.vibrate(50);
-        }
-      }
-    });
 
     // PARTIE RÉINITIALISATION - AMÉLIORÉE
     
     // Stocke la dernière valeur connue du token de reset
     let lastKnownResetToken = "";
 
-    // Vérification de réinitialisation par plusieurs méthodes
     // Vérification de réinitialisation par plusieurs méthodes
     function checkForReset() {
       // 1. Vérifier le paramètre d'URL pour réinitialisation immédiate
@@ -596,7 +740,7 @@
       const resetTimestamp = localStorage.getItem("quizDisplay_resetTimestamp");
       const storedTimestamp = localStorage.getItem("lastKnownResetTimestamp") || "0";
 
-      // 4. AJOUT: Vérification directe sur le serveur
+      // 4. Vérification directe sur le serveur
       fetch(`${API_URL}?action=checkResetStatus&cacheBuster=${Date.now()}`)
         .then(response => response.json())
         .then(data => {
@@ -679,8 +823,6 @@
       
       // Animation uniquement lors du premier chargement
       setTimeout(() => {
-        questionCard.classList.add('show');
-        
         pollQuestion();
         
         // Intervalle pour la mise à jour des questions
