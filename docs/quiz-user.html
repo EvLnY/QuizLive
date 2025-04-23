@@ -577,17 +577,23 @@
 
     // ✅ AJOUT de la condition de vérification du token AVANT chargement du quiz
     document.addEventListener('DOMContentLoaded', () => {
-      const urlToken = new URLSearchParams(window.location.search).get("token");
-      const sessionToken = sessionStorage.getItem("quiz_user_token");
+  const urlToken = new URLSearchParams(window.location.search).get("token");
 
-      if (!urlToken || urlToken !== sessionToken) {
-        document.body.innerHTML = `
-          <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; color: #004750; font-family: sans-serif;">
-            <h2>Merci d'avoir participé</h2>
-          </div>
-        `;
-        return;
-      }
+  // ➕ Stocker le token pour permettre la validation
+  if (urlToken) {
+    sessionStorage.setItem("quiz_user_token", urlToken);
+  }
+
+  const sessionToken = sessionStorage.getItem("quiz_user_token");
+
+  if (!urlToken || urlToken !== sessionToken) {
+    document.body.innerHTML = `
+      <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; color: #004750; font-family: sans-serif;">
+        <h2>Merci d'avoir participé</h2>
+      </div>
+    `;
+    return;
+  }
 
       showLoading();
       document.getElementById('question-card').classList.add('show');
