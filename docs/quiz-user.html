@@ -577,13 +577,45 @@
     sessionStorage.setItem("quiz_user_token", urlToken);
   }
 
-  checkForReset(); // Lancement immédiat (verrouille si token incorrect)
+  // On vérifie d'abord la validité du token AVANT de tout lancer
+  fetch(`${API_URL}?action=checkResetStatus&cacheBuster=${Date.now()}`)
+    .then(res => res.json())
+    .then(data => {
+      const validToken = data?.accessToken || "";
+      const resetTimestamp = data?.resetTimestamp || "0";
+      const storedTimestamp = localStorage.getItem("lastKnownResetTimestamp") || "0";
 
-  setTimeout(() => {
-    pollQuestion();
-    setInterval(pollQuestion, 2000);
-    setInterval(checkForReset, 3000);
-  }, 300);
+      if (!urlToken || urlToken !== validToken) {
+        document.body.innerHTML = `
+          <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; color: #004750; font-family: sans-serif;">
+            <h2>Merci d'avoir participé</h2>
+          </div>
+        `;
+        return;
+      }
+
+      // ✅ Token valide : on peut continuer
+      showLoading();
+      document.getElementById('question-card').classList.add('show');
+
+      if (resetTimestamp !== storedTimestamp) {
+        localStorage.setItem("lastKnownResetTimestamp", resetTimestamp);
+        resetAllAnswers();
+        showToast("Quiz réinitialisé !");
+      }
+
+      pollQuestion();
+      setInterval(pollQuestion, 2000);
+      setInterval(checkForReset, 3000);
+    })
+    .catch(err => {
+      console.error("Erreur de validation du token :", err);
+      document.body.innerHTML = `
+        <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; color: #004750; font-family: sans-serif;">
+          <h2>Erreur de connexion au quiz</h2>
+        </div>
+      `;
+    });
 });
   </script>
 </body>
