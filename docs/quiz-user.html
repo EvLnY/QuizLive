@@ -343,7 +343,7 @@
 </head>
 <body>
   <div class="header">
-    <h1>Quiz Apimo</h1>
+    <h1>Quiz Interactif</h1>
   </div>
 
   <div id="resetToast" class="toast">Quiz réinitialisé !</div>
@@ -367,6 +367,7 @@
     let lastQuestionId = null;
     let currentQuestion = null;
     let isFirstLoad = true;
+    let lastKnownResetToken = "";
 
     function showLoading() {
       document.getElementById('loading').style.display = 'flex';
@@ -383,6 +384,10 @@
       toast.textContent = message;
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), duration);
+    }
+
+    function stripMultiTag(text) {
+      return text.replace("::multi", "").trim();
     }
 
     async function pollQuestion() {
@@ -516,7 +521,6 @@
         }
 
         localStorage.setItem("answered_" + currentQuestion.id, "1");
-
         document.getElementById("quiz-form").innerHTML = "<p class='message'>Réponse envoyée avec succès !</p>";
         document.getElementById("question").innerHTML = `${stripMultiTag(currentQuestion.question)} <span class="answered-tag">Répondu</span>`;
       } catch (err) {
@@ -525,16 +529,6 @@
           <p class='message' style='background: rgba(239, 68, 68, 0.1); color: var(--error);'>
             Erreur lors de l'envoi. Veuillez réessayer.
           </p>`;
-      }
-    });
-
-    function stripMultiTag(text) {
-      return text.replace("::multi", "").trim();
-    }
-
-    document.addEventListener('click', function(e) {
-      if (e.target.closest('.choice-label') && navigator.vibrate) {
-        navigator.vibrate(50);
       }
     });
 
@@ -581,12 +575,24 @@
       Object.keys(localStorage).filter(k => k.startsWith("answered_")).forEach(k => localStorage.removeItem(k));
     }
 
-    let lastKnownResetToken = "";
-
+    // ✅ AJOUT de la condition de vérification du token AVANT chargement du quiz
     document.addEventListener('DOMContentLoaded', () => {
+      const urlToken = new URLSearchParams(window.location.search).get("token");
+      const sessionToken = sessionStorage.getItem("quiz_user_token");
+
+      if (!urlToken || urlToken !== sessionToken) {
+        document.body.innerHTML = `
+          <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; color: #004750; font-family: sans-serif;">
+            <h2>Merci d'avoir participé</h2>
+          </div>
+        `;
+        return;
+      }
+
       showLoading();
       document.getElementById('question-card').classList.add('show');
       checkForReset();
+
       setTimeout(() => {
         pollQuestion();
         setInterval(pollQuestion, 2000);
