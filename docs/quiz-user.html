@@ -532,44 +532,49 @@
       }
     });
 
-    function checkForReset() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const resetParam = urlParams.get('reset');
-      const storageToken = localStorage.getItem("quizReset_token") || sessionStorage.getItem("quizReset_token") || "";
-      const resetTimestamp = localStorage.getItem("quizDisplay_resetTimestamp");
-      const storedTimestamp = localStorage.getItem("lastKnownResetTimestamp") || "0";
+      function checkForReset() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const resetParam = urlParams.get('reset');
+    const currentSessionToken = sessionStorage.getItem("quiz_user_token");
 
-      fetch(`${API_URL}?action=checkResetStatus&cacheBuster=${Date.now()}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data?.resetTimestamp && data.resetTimestamp !== storedTimestamp) {
-            localStorage.setItem("lastKnownResetTimestamp", data.resetTimestamp);
-            resetAllAnswers();
-            showToast("Quiz réinitialisé par l'administrateur!");
-            pollQuestion();
+    fetch(`${API_URL}?action=checkResetStatus&cacheBuster=${Date.now()}`)
+      .then(res => res.json())
+      .then(data => {
+        const resetTimestamp = data?.resetTimestamp || "";
+        const storedTimestamp = localStorage.getItem("lastKnownResetTimestamp") || "0";
+
+        if (resetTimestamp && resetTimestamp !== storedTimestamp) {
+          // Nouveau reset détecté
+          localStorage.setItem("lastKnownResetTimestamp", resetTimestamp);
+          resetAllAnswers();
+          showToast("Quiz réinitialisé par l'administrateur!");
+
+          // Invalider le token utilisateur
+          const storedResetToken = localStorage.getItem("quizReset_token");
+          if (storedResetToken && currentSessionToken && !currentSessionToken.includes("access_")) {
+            document.body.innerHTML = `
+              <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; color: #004750; font-family: sans-serif;">
+                <h2>Merci d'avoir participé</h2>
+              </div>
+            `;
+            return;
           }
-        });
 
-      const isReset = resetParam || (storageToken && storageToken !== lastKnownResetToken) || (resetTimestamp && resetTimestamp !== storedTimestamp);
-
-      if (isReset) {
-        if (resetParam) {
-          localStorage.setItem("quizReset_token", resetParam);
-          sessionStorage.setItem("quizReset_token", resetParam);
-          if (history.replaceState) {
-            const cleanUrl = location.href.split('?')[0];
-            history.replaceState({}, document.title, cleanUrl);
-          }
+          pollQuestion(); // Charger la nouvelle question
         }
+      });
 
-        if (storageToken) lastKnownResetToken = storageToken;
-        if (resetTimestamp) localStorage.setItem("lastKnownResetTimestamp", resetTimestamp);
-
-        resetAllAnswers();
-        showToast("Quiz réinitialisé !");
-        pollQuestion();
+    // Si l'URL contient un reset token à enregistrer
+    if (resetParam) {
+      localStorage.setItem("quizReset_token", resetParam);
+      sessionStorage.setItem("quizReset_token", resetParam);
+      if (history.replaceState) {
+        const cleanUrl = location.href.split('?')[0];
+        history.replaceState({}, document.title, cleanUrl);
       }
     }
+  }
+
 
     function resetAllAnswers() {
       Object.keys(localStorage).filter(k => k.startsWith("answered_")).forEach(k => localStorage.removeItem(k));
