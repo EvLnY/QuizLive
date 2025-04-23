@@ -533,48 +533,38 @@
     });
 
       function checkForReset() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const resetParam = urlParams.get('reset');
-    const currentSessionToken = sessionStorage.getItem("quiz_user_token");
+  const urlToken = new URLSearchParams(window.location.search).get("token");
+  const sessionToken = sessionStorage.getItem("quiz_user_token");
 
-    fetch(`${API_URL}?action=checkResetStatus&cacheBuster=${Date.now()}`)
-      .then(res => res.json())
-      .then(data => {
-        const resetTimestamp = data?.resetTimestamp || "";
-        const storedTimestamp = localStorage.getItem("lastKnownResetTimestamp") || "0";
+  fetch(`${API_URL}?action=checkResetStatus&cacheBuster=${Date.now()}`)
+    .then(res => res.json())
+    .then(data => {
+      const resetTimestamp = data?.resetTimestamp || "0";
+      const validToken = data?.accessToken || "";
+      const storedTimestamp = localStorage.getItem("lastKnownResetTimestamp") || "0";
 
-        if (resetTimestamp && resetTimestamp !== storedTimestamp) {
-          // Nouveau reset détecté
-          localStorage.setItem("lastKnownResetTimestamp", resetTimestamp);
-          resetAllAnswers();
-          showToast("Quiz réinitialisé par l'administrateur!");
-
-          // Invalider le token utilisateur
-          const storedResetToken = localStorage.getItem("quizReset_token");
-          if (storedResetToken && currentSessionToken && !currentSessionToken.includes("access_")) {
-            document.body.innerHTML = `
-              <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; color: #004750; font-family: sans-serif;">
-                <h2>Merci d'avoir participé</h2>
-              </div>
-            `;
-            return;
-          }
-
-          pollQuestion(); // Charger la nouvelle question
-        }
-      });
-
-    // Si l'URL contient un reset token à enregistrer
-    if (resetParam) {
-      localStorage.setItem("quizReset_token", resetParam);
-      sessionStorage.setItem("quizReset_token", resetParam);
-      if (history.replaceState) {
-        const cleanUrl = location.href.split('?')[0];
-        history.replaceState({}, document.title, cleanUrl);
+      // ❌ Si aucun token, ou token invalide, on bloque l'accès
+      if (!urlToken || !validToken || urlToken !== validToken) {
+        document.body.innerHTML = `
+          <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; color: #004750; font-family: sans-serif;">
+            <h2>Merci d'avoir participé</h2>
+          </div>
+        `;
+        return;
       }
-    }
-  }
 
+      // ✅ Enregistrer le timestamp si nouveau reset détecté
+      if (resetTimestamp !== storedTimestamp) {
+        localStorage.setItem("lastKnownResetTimestamp", resetTimestamp);
+        resetAllAnswers();
+        showToast("Quiz réinitialisé par l'administrateur !");
+        pollQuestion();
+      }
+    })
+    .catch(err => {
+      console.error("Erreur lors de la vérification du token :", err);
+    });
+}
 
     function resetAllAnswers() {
       Object.keys(localStorage).filter(k => k.startsWith("answered_")).forEach(k => localStorage.removeItem(k));
@@ -583,33 +573,18 @@
     // ✅ AJOUT de la condition de vérification du token AVANT chargement du quiz
     document.addEventListener('DOMContentLoaded', () => {
   const urlToken = new URLSearchParams(window.location.search).get("token");
-
-  // ➕ Stocker le token pour permettre la validation
   if (urlToken) {
     sessionStorage.setItem("quiz_user_token", urlToken);
   }
 
-  const sessionToken = sessionStorage.getItem("quiz_user_token");
+  checkForReset(); // Lancement immédiat (verrouille si token incorrect)
 
-  if (!urlToken || urlToken !== sessionToken) {
-    document.body.innerHTML = `
-      <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; color: #004750; font-family: sans-serif;">
-        <h2>Merci d'avoir participé</h2>
-      </div>
-    `;
-    return;
-  }
-
-      showLoading();
-      document.getElementById('question-card').classList.add('show');
-      checkForReset();
-
-      setTimeout(() => {
-        pollQuestion();
-        setInterval(pollQuestion, 2000);
-        setInterval(checkForReset, 2000);
-      }, 300);
-    });
+  setTimeout(() => {
+    pollQuestion();
+    setInterval(pollQuestion, 2000);
+    setInterval(checkForReset, 3000);
+  }, 300);
+});
   </script>
 </body>
 </html>
