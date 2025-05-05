@@ -418,6 +418,7 @@
     let currentQuestion = null;
     let isFirstLoad = true;
     let selectedChoices = new Set();
+    let isPollingSuspended = false;
     
     // Optimisations mobiles
     document.addEventListener('touchstart', function() {}, {passive: true});
@@ -500,13 +501,42 @@
         }
 
         const alreadyAnswered = localStorage.getItem("answered_" + data.id);
-        const shouldRender = data.id !== lastQuestionId || !alreadyAnswered;
-        if (!shouldRender) return;
-
-        const isNewQuestion = data.id !== lastQuestionId;
+        
+        // Vérifions si c'est la même question que celle actuellement affichée
+        if (lastQuestionId === data.id) {
+          // Si la question est la même, on ne fait pas de rendu complet
+          // mais on vérifie si on doit afficher "déjà répondu"
+          if (alreadyAnswered && document.getElementById('quiz-form').querySelector('.message') === null) {
+            const questionElem = document.getElementById("question");
+            questionElem.innerHTML = `${stripMultiTag(data.question)} <span class="answered-tag">Répondu</span>`;
+            document.getElementById('quiz-form').innerHTML = "<p class='message'>Vous avez déjà répondu à cette question.</p>";
+          }
+          return;
+        }
+        
+        // Sauvegardons les choix actuels avant de changer de question
+        if (currentQuestion) {
+          localStorage.setItem(`choices_${currentQuestion.id}`, JSON.stringify(Array.from(selectedChoices)));
+        }
+        
+        // À partir d'ici nous avons une nouvelle question
+        const isNewQuestion = true;
         lastQuestionId = data.id;
         currentQuestion = data;
+        
+        // Réinitialisation des choix pour la nouvelle question
         selectedChoices.clear();
+        
+        // Récupérons les choix sauvegardés si l'utilisateur revient à une question vue précédemment
+        const savedChoices = localStorage.getItem(`choices_${data.id}`);
+        if (savedChoices) {
+          try {
+            const parsedChoices = JSON.parse(savedChoices);
+            parsedChoices.forEach(choice => selectedChoices.add(choice));
+          } catch (e) {
+            console.error("Erreur lors de la récupération des choix sauvegardés", e);
+          }
+        }
 
         const questionElem = document.getElementById("question");
         const form = document.getElementById("quiz-form");
@@ -544,6 +574,11 @@
           btn.className = "choice-btn";
           btn.dataset.value = choice;
           
+          // Si ce choix fait partie des choix sélectionnés précédemment, on l'active
+          if (selectedChoices.has(choice)) {
+            btn.classList.add('selected');
+          }
+          
           btn.innerHTML = `
             <div class="choice-icon ${isMultiple ? 'choice-checkbox' : 'choice-radio'}"></div>
             <span class="choice-text">${choice}</span>
@@ -552,6 +587,9 @@
           btn.addEventListener('click', (e) => {
             toggleChoice(btn, isMultiple);
             createRipple(e, btn);
+            
+            // Sauvegarde immédiate des choix après chaque clic
+            localStorage.setItem(`choices_${data.id}`, JSON.stringify(Array.from(selectedChoices)));
           });
           
           if (isFirstLoad || isNewQuestion) {
@@ -652,6 +690,9 @@
 
         localStorage.setItem("answered_" + currentQuestion.id, "1");
         
+        // Supprimons les choix sauvegardés après soumission réussie
+        localStorage.removeItem(`choices_${currentQuestion.id}`);
+        
         // Confirmation visuelle et haptique du succès
         document.getElementById("quiz-form").innerHTML = "<p class='message'>Réponse envoyée avec succès !</p>";
         document.getElementById("question").innerHTML = `${stripMultiTag(currentQuestion.question)} <span class="answered-tag">Répondu</span>`;
@@ -712,8 +753,25 @@
       Object.keys(localStorage).filter(k => k.startsWith("answered_")).forEach(k => localStorage.removeItem(k));
     }
 
+    // Nettoyage des anciens choix (plus de 24h)
+    function cleanupOldChoices() {
+      const now = Date.now();
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('choices_')) {
+          const timestamp = localStorage.getItem(`${key}_timestamp`);
+          if (timestamp && now - parseInt(timestamp) > 86400000) { // 24 heures
+            localStorage.removeItem(key);
+            localStorage.removeItem(`${key}_timestamp`);
+          }
+        }
+      });
+    }
+    
     // AJOUT de la condition de vérification du token AVANT chargement du quiz
     document.addEventListener('DOMContentLoaded', () => {
+      // Nettoyage des données anciennes
+      cleanupOldChoices();
+    
       const urlToken = new URLSearchParams(window.location.search).get("token");
       if (urlToken) {
         sessionStorage.setItem("quiz_user_token", urlToken);
@@ -755,8 +813,27 @@
           pollQuestion();
           
           // Intervalles optimisés pour réduire la consommation de batterie sur mobile
-          setInterval(pollQuestion, 3000);
-          setInterval(checkForReset, 5000);
+          // Polling moins fréquent pour éviter les problèmes de sélection
+          const pollInterval = setInterval(pollQuestion, 5000);
+          const resetCheckInterval = setInterval(checkForReset, 8000);
+          
+          // Mécanisme pour désactiver temporairement le polling pendant que l'utilisateur interagit
+          document.addEventListener('touchstart', () => {
+            clearInterval(pollInterval);
+            clearInterval(resetCheckInterval);
+            
+            // Redémarrage du polling après 10 secondes d'inactivité
+            const resumePolling = setTimeout(() => {
+              pollQuestion();
+              setInterval(pollQuestion, 5000);
+              setInterval(checkForReset, 8000);
+            }, 10000);
+            
+            // Si l'utilisateur interagit à nouveau, on réinitialise le timer
+            document.addEventListener('touchstart', () => {
+              clearTimeout(resumePolling);
+            }, { once: true });
+          }, { passive: true });
         })
         .catch(err => {
           console.error("Erreur de validation du token :", err);
