@@ -24,10 +24,11 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
     }
     
     body {
-      font-family: 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -40,32 +41,16 @@
     .header {
       background: linear-gradient(135deg, var(--primary), var(--primary-dark));
       color: white;
-      padding: 1.5rem;
+      padding: 1rem;
       text-align: center;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .header::before {
-      content: "";
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 80%);
-      animation: pulse 15s infinite;
-    }
-    
-    @keyframes pulse {
-      0% { transform: scale(1); opacity: 0.3; }
-      50% { transform: scale(1.05); opacity: 0.6; }
-      100% { transform: scale(1); opacity: 0.3; }
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
     
     .header h1 {
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       font-weight: 700;
       margin: 0;
       position: relative;
@@ -73,9 +58,9 @@
     }
     
     .quiz-container {
-      padding: 1.5rem;
+      padding: 1rem;
       flex-grow: 1;
-      max-width: 600px;
+      max-width: 100%;
       margin: 0 auto;
       width: 100%;
     }
@@ -83,67 +68,66 @@
     .question-card {
       background: var(--card);
       border-radius: 16px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
       position: relative;
       overflow: hidden;
       transition: transform var(--animation-speed) ease;
     }
     
-    .question-card::after {
-      content: "";
-      position: absolute;
-      bottom: 0;
-      right: 0;
-      width: 60px;
-      height: 60px;
-      background: linear-gradient(135deg, transparent 50%, rgba(0, 206, 124, 0.1) 50%);
-      border-radius: 0 0 16px 0;
-    }
-    
-    .question-card:hover {
-      transform: translateY(-3px);
-    }
-    
     #question {
-      font-size: 1.25rem;
+      font-size: 1.2rem;
       font-weight: 600;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.25rem;
       line-height: 1.4;
       color: var(--text);
     }
     
     .choice-container {
-      margin: 1rem 0;
+      margin-bottom: 0.75rem;
     }
     
-    .choice-label {
+    .choice-btn {
       display: flex;
       align-items: center;
+      width: 100%;
       padding: 1rem;
       border-radius: 12px;
       background: rgba(199, 241, 214, 0.5);
-      border: 2px solid transparent;
+      border: none;
       transition: all var(--animation-speed) ease;
       cursor: pointer;
       position: relative;
       overflow: hidden;
+      text-align: left;
+      font-size: 1rem;
+      color: var(--text);
+      font-family: inherit;
     }
     
-    .choice-label:hover {
-      background: rgba(138, 224, 176, 0.3);
-      transform: translateX(3px);
+    .choice-btn.selected {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 2px 8px rgba(0, 206, 124, 0.3);
+      transform: translateY(-2px);
     }
     
-    .choice-input {
-      appearance: none;
+    .choice-btn:active {
+      transform: scale(0.98);
+    }
+    
+    .choice-icon {
       width: 24px;
       height: 24px;
+      min-width: 24px;
       border: 2px solid var(--accent);
-      margin-right: 1rem;
+      margin-right: 0.75rem;
       position: relative;
       transition: all var(--animation-speed) ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     
     .choice-radio {
@@ -154,36 +138,28 @@
       border-radius: 6px;
     }
     
-    .choice-input:checked {
-      border-color: var(--primary);
-      background-color: var(--primary);
+    .choice-btn.selected .choice-icon {
+      border-color: white;
+      background-color: rgba(255, 255, 255, 0.2);
     }
     
-    .choice-radio:checked::after {
+    .choice-btn.selected .choice-radio::after {
       content: "";
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
       width: 12px;
       height: 12px;
       background: white;
       border-radius: 50%;
     }
     
-    .choice-checkbox:checked::after {
+    .choice-btn.selected .choice-checkbox::after {
       content: "✓";
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
       color: white;
       font-size: 14px;
       font-weight: bold;
     }
     
     .choice-text {
-      font-size: 1rem;
       flex-grow: 1;
     }
     
@@ -191,7 +167,7 @@
       background: var(--primary);
       color: white;
       border: none;
-      padding: 1rem 1.5rem;
+      padding: 1rem;
       font-size: 1.1rem;
       font-weight: 600;
       border-radius: 12px;
@@ -204,9 +180,8 @@
       margin-top: 1rem;
     }
     
-    .submit-btn:hover {
+    .submit-btn:hover, .submit-btn:focus {
       background: var(--primary-dark);
-      transform: translateY(-2px);
       box-shadow: 0 6px 12px rgba(0, 206, 124, 0.3);
     }
     
@@ -214,24 +189,22 @@
       transform: translateY(1px);
     }
     
-    .submit-btn::after {
-      content: "";
+    .ripple {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 5px;
-      height: 5px;
-      background: rgba(255, 255, 255, 0.5);
-      opacity: 0;
-      border-radius: 100%;
-      transform: translate(-50%, -50%) scale(1);
-      transition: all 0.6s ease-out;
+      width: 100px;
+      height: 100px;
+      background: rgba(255, 255, 255, 0.4);
+      border-radius: 50%;
+      transform: scale(0);
+      animation: ripple 0.6s linear;
+      pointer-events: none;
     }
     
-    .submit-btn:focus::after {
-      opacity: 1;
-      transform: translate(-50%, -50%) scale(50);
-      transition: all 0.6s ease-out;
+    @keyframes ripple {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
     }
     
     .message {
@@ -257,13 +230,13 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 200px;
+      min-height: 150px;
     }
     
     .loading-spinner {
-      width: 48px;
-      height: 48px;
-      border: 5px solid rgba(0, 206, 124, 0.2);
+      width: 36px;
+      height: 36px;
+      border: 4px solid rgba(0, 206, 124, 0.2);
       border-top-color: var(--primary);
       border-radius: 50%;
       animation: spin 1s linear infinite;
@@ -301,13 +274,13 @@
     
     .footer {
       text-align: center;
-      padding: 1rem;
+      padding: 0.75rem;
       color: var(--primary-dark);
       font-size: 0.8rem;
       background-color: var(--tertiary);
     }
 
-    /* Animation classes - only applied on initial load and question changes */
+    /* Animation classes */
     .animate-in {
       opacity: 0;
       transform: translateY(20px);
@@ -319,25 +292,102 @@
       transform: translateY(0);
     }
     
-    /* Toast notification pour la réinitialisation */
+    /* Toast notification */
     .toast {
       position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 10px 15px;
-      background-color: var(--primary);
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      padding: 12px 16px;
+      background-color: var(--primary-dark);
       color: white;
       border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       z-index: 100;
       opacity: 0;
-      transform: translateY(-10px);
       transition: all 0.3s ease;
+      text-align: center;
+      max-width: 90%;
     }
     
     .toast.show {
       opacity: 1;
-      transform: translateY(0);
+      transform: translateX(-50%) translateY(0);
+    }
+    
+    /* Progress indicator */
+    .progress-container {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+    
+    .progress-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--tertiary);
+      margin: 0 4px;
+      transition: all 0.3s ease;
+    }
+    
+    .progress-dot.active {
+      background-color: var(--primary);
+      transform: scale(1.3);
+    }
+    
+    /* Waiting for question state */
+    .waiting-state {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-light);
+    }
+    
+    .waiting-state .pulse {
+      display: inline-block;
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: rgba(0, 206, 124, 0.1);
+      margin-bottom: 1rem;
+      position: relative;
+    }
+    
+    .waiting-state .pulse::after {
+      content: "";
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+      background: rgba(0, 206, 124, 0.2);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 0.7; }
+      50% { transform: scale(1.05); opacity: 0.4; }
+      100% { transform: scale(0.95); opacity: 0.7; }
+    }
+    
+    /* Error state */
+    .error-state {
+      text-align: center;
+      padding: 1.5rem;
+      color: var(--error);
+    }
+    
+    .error-message {
+      background: rgba(239, 68, 68, 0.1);
+      padding: 1rem;
+      border-radius: 12px;
+      margin-top: 1rem;
+    }
+    
+    /* Pour empêcher le défilement du body quand le modal est ouvert */
+    body.modal-open {
+      overflow: hidden;
     }
   </style>
 </head>
@@ -367,7 +417,10 @@
     let lastQuestionId = null;
     let currentQuestion = null;
     let isFirstLoad = true;
-    let lastKnownResetToken = "";
+    let selectedChoices = new Set();
+    
+    // Optimisations mobiles
+    document.addEventListener('touchstart', function() {}, {passive: true});
 
     function showLoading() {
       document.getElementById('loading').style.display = 'flex';
@@ -386,17 +439,63 @@
       setTimeout(() => toast.classList.remove('show'), duration);
     }
 
+    function createRipple(event, element) {
+      const ripple = document.createElement('span');
+      ripple.classList.add('ripple');
+      element.appendChild(ripple);
+      
+      const rect = element.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      
+      ripple.style.left = `${x}px`;
+      ripple.style.top = `${y}px`;
+      
+      setTimeout(() => {
+        ripple.remove();
+      }, 600);
+    }
+
     function stripMultiTag(text) {
       return text.replace("::multi", "").trim();
     }
 
+    function toggleChoice(choiceBtn, isMultiple) {
+      const value = choiceBtn.dataset.value;
+      
+      if (isMultiple) {
+        if (selectedChoices.has(value)) {
+          selectedChoices.delete(value);
+          choiceBtn.classList.remove('selected');
+        } else {
+          selectedChoices.add(value);
+          choiceBtn.classList.add('selected');
+        }
+      } else {
+        // Pour les questions à choix unique, désélectionnez tous les autres
+        document.querySelectorAll('.choice-btn').forEach(btn => {
+          btn.classList.remove('selected');
+        });
+        selectedChoices.clear();
+        selectedChoices.add(value);
+        choiceBtn.classList.add('selected');
+      }
+    }
+
     async function pollQuestion() {
       try {
-        const res = await fetch(`${API_URL}?action=getQuestion`);
+        const res = await fetch(`${API_URL}?action=getQuestion&cacheBuster=${Date.now()}`);
         const data = await res.json();
 
         if (!data || data.id === "") {
           document.getElementById('question').textContent = "En attente d'une nouvelle question...";
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('quiz-form').innerHTML = `
+            <div class="waiting-state">
+              <div class="pulse"></div>
+              <p>En attente d'une nouvelle question...</p>
+            </div>
+          `;
           return;
         }
 
@@ -407,6 +506,7 @@
         const isNewQuestion = data.id !== lastQuestionId;
         lastQuestionId = data.id;
         currentQuestion = data;
+        selectedChoices.clear();
 
         const questionElem = document.getElementById("question");
         const form = document.getElementById("quiz-form");
@@ -420,13 +520,17 @@
 
         const isMultiple = data.question.includes("::multi");
         questionElem.textContent = stripMultiTag(data.question);
-        const alreadySelected = form.querySelector('input[name="answer"]:checked');
-        if (form.children.length > 0 && alreadySelected) return;
 
         if (isNewQuestion) {
+          // Effet visuel pour nouvelle question
           const card = document.getElementById('question-card');
           card.classList.add('shake');
           setTimeout(() => card.classList.remove('shake'), 500);
+          
+          // Vibration sur mobile pour nouvelle question (si supporté)
+          if ('vibrate' in navigator) {
+            navigator.vibrate(100);
+          }
         }
 
         form.innerHTML = "";
@@ -434,25 +538,35 @@
         data.choices.forEach((choice, i) => {
           const div = document.createElement("div");
           div.className = "choice-container";
-          div.innerHTML = `
-            <label class="choice-label">
-              <input type="${isMultiple ? "checkbox" : "radio"}"
-                     class="choice-input ${isMultiple ? 'choice-checkbox' : 'choice-radio'}"
-                     name="answer"
-                     value="${choice}" />
-              <span class="choice-text">${choice}</span>
-            </label>
+          
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "choice-btn";
+          btn.dataset.value = choice;
+          
+          btn.innerHTML = `
+            <div class="choice-icon ${isMultiple ? 'choice-checkbox' : 'choice-radio'}"></div>
+            <span class="choice-text">${choice}</span>
           `;
+          
+          btn.addEventListener('click', (e) => {
+            toggleChoice(btn, isMultiple);
+            createRipple(e, btn);
+          });
+          
           if (isFirstLoad || isNewQuestion) {
-            div.style.opacity = "0";
-            div.style.transform = "translateX(20px)";
-            div.style.transition = "all 0.3s ease";
+            btn.style.opacity = "0";
+            btn.style.transform = "translateX(20px)";
+            btn.style.transition = "all 0.3s ease";
           }
+          
+          div.appendChild(btn);
           form.appendChild(div);
+          
           if (isFirstLoad || isNewQuestion) {
             setTimeout(() => {
-              div.style.opacity = "1";
-              div.style.transform = "translateX(0)";
+              btn.style.opacity = "1";
+              btn.style.transform = "translateX(0)";
             }, 100 + (i * 80));
           }
         });
@@ -461,10 +575,16 @@
         submitBtn.type = "submit";
         submitBtn.className = "submit-btn";
         submitBtn.textContent = isMultiple ? "Envoyer mes réponses" : "Envoyer ma réponse";
+        submitBtn.addEventListener('click', (e) => {
+          createRipple(e, submitBtn);
+        });
+        
         if (isFirstLoad || isNewQuestion) {
           submitBtn.style.opacity = "0";
         }
+        
         form.appendChild(submitBtn);
+        
         if (isFirstLoad || isNewQuestion) {
           setTimeout(() => {
             submitBtn.style.opacity = "1";
@@ -475,7 +595,14 @@
         isFirstLoad = false;
       } catch (err) {
         console.error("Erreur lors de la récupération de la question :", err);
-        document.getElementById('question').textContent = "Erreur de connexion...";
+        document.getElementById('question').textContent = "Erreur de connexion";
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('quiz-form').innerHTML = `
+          <div class="error-state">
+            <p>Impossible de se connecter au serveur</p>
+            <p class="error-message">Veuillez vérifier votre connexion et rafraîchir la page</p>
+          </div>
+        `;
       }
     }
 
@@ -491,11 +618,9 @@
       }
 
       const isMultiple = currentQuestion.question.includes("::multi");
-      const selected = isMultiple
-        ? Array.from(document.querySelectorAll('input[name="answer"]:checked')).map(i => i.value)
-        : [document.querySelector('input[name="answer"]:checked')?.value];
+      const selected = Array.from(selectedChoices);
 
-      if (selected.length === 0 || selected.includes(undefined)) {
+      if (selected.length === 0) {
         if (submitBtn) {
           submitBtn.disabled = false;
           submitBtn.textContent = isMultiple ? "Envoyer mes réponses" : "Envoyer ma réponse";
@@ -503,6 +628,11 @@
         }
         document.getElementById('question-card').classList.add('shake');
         setTimeout(() => document.getElementById('question-card').classList.remove('shake'), 500);
+        
+        // Vibration pour erreur
+        if ('vibrate' in navigator) {
+          navigator.vibrate([50, 50, 50]);
+        }
         return;
       }
 
@@ -521,102 +651,129 @@
         }
 
         localStorage.setItem("answered_" + currentQuestion.id, "1");
+        
+        // Confirmation visuelle et haptique du succès
         document.getElementById("quiz-form").innerHTML = "<p class='message'>Réponse envoyée avec succès !</p>";
         document.getElementById("question").innerHTML = `${stripMultiTag(currentQuestion.question)} <span class="answered-tag">Répondu</span>`;
+        
+        if ('vibrate' in navigator) {
+          navigator.vibrate(200);
+        }
       } catch (err) {
         console.error("Erreur lors de l'envoi :", err);
         document.getElementById("quiz-form").innerHTML = `
-          <p class='message' style='background: rgba(239, 68, 68, 0.1); color: var(--error);'>
-            Erreur lors de l'envoi. Veuillez réessayer.
-          </p>`;
+          <div class="error-state">
+            <p class="error-message">Erreur lors de l'envoi. Veuillez réessayer.</p>
+            <button class="submit-btn" onclick="window.location.reload()">Réessayer</button>
+          </div>`;
       }
     });
 
-      function checkForReset() {
-  const urlToken = new URLSearchParams(window.location.search).get("token");
-  const sessionToken = sessionStorage.getItem("quiz_user_token");
+    function checkForReset() {
+      const urlToken = new URLSearchParams(window.location.search).get("token");
+      const sessionToken = sessionStorage.getItem("quiz_user_token");
 
-  fetch(`${API_URL}?action=checkResetStatus&cacheBuster=${Date.now()}`)
-    .then(res => res.json())
-    .then(data => {
-      const resetTimestamp = data?.resetTimestamp || "0";
-      const validToken = data?.accessToken || "";
-      const storedTimestamp = localStorage.getItem("lastKnownResetTimestamp") || "0";
+      fetch(`${API_URL}?action=checkResetStatus&cacheBuster=${Date.now()}`)
+        .then(res => res.json())
+        .then(data => {
+          const resetTimestamp = data?.resetTimestamp || "0";
+          const validToken = data?.accessToken || "";
+          const storedTimestamp = localStorage.getItem("lastKnownResetTimestamp") || "0";
 
-      // ❌ Si aucun token, ou token invalide, on bloque l'accès
-      if (!urlToken || !validToken || urlToken !== validToken) {
-        document.body.innerHTML = `
-          <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; color: #004750; font-family: sans-serif;">
-            <h2>Merci d'avoir participé</h2>
-          </div>
-        `;
-        return;
-      }
+          // Si aucun token, ou token invalide, on bloque l'accès
+          if (!urlToken || !validToken || urlToken !== validToken) {
+            document.body.innerHTML = `
+              <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; flex-direction: column; background: #f8fafc; color: #004750; font-family: sans-serif; padding: 1rem; text-align: center;">
+                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#00CE7C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                <h2 style="margin-top: 1rem;">Merci d'avoir participé</h2>
+                <p style="margin-top: 0.5rem; color: #6b7280;">Le quiz est maintenant terminé.</p>
+              </div>
+            `;
+            return;
+          }
 
-      // ✅ Enregistrer le timestamp si nouveau reset détecté
-      if (resetTimestamp !== storedTimestamp) {
-        localStorage.setItem("lastKnownResetTimestamp", resetTimestamp);
-        resetAllAnswers();
-        showToast("Quiz réinitialisé par l'administrateur !");
-        pollQuestion();
-      }
-    })
-    .catch(err => {
-      console.error("Erreur lors de la vérification du token :", err);
-    });
-}
+          // Enregistrer le timestamp si nouveau reset détecté
+          if (resetTimestamp !== storedTimestamp) {
+            localStorage.setItem("lastKnownResetTimestamp", resetTimestamp);
+            resetAllAnswers();
+            showToast("Quiz réinitialisé par l'administrateur !");
+            pollQuestion();
+          }
+        })
+        .catch(err => {
+          console.error("Erreur lors de la vérification du token :", err);
+        });
+    }
 
     function resetAllAnswers() {
       Object.keys(localStorage).filter(k => k.startsWith("answered_")).forEach(k => localStorage.removeItem(k));
     }
 
-    // ✅ AJOUT de la condition de vérification du token AVANT chargement du quiz
+    // AJOUT de la condition de vérification du token AVANT chargement du quiz
     document.addEventListener('DOMContentLoaded', () => {
-  const urlToken = new URLSearchParams(window.location.search).get("token");
-  if (urlToken) {
-    sessionStorage.setItem("quiz_user_token", urlToken);
-  }
-
-  // On vérifie d'abord la validité du token AVANT de tout lancer
-  fetch(`${API_URL}?action=checkResetStatus&cacheBuster=${Date.now()}`)
-    .then(res => res.json())
-    .then(data => {
-      const validToken = data?.accessToken || "";
-      const resetTimestamp = data?.resetTimestamp || "0";
-      const storedTimestamp = localStorage.getItem("lastKnownResetTimestamp") || "0";
-
-      if (!urlToken || urlToken !== validToken) {
-        document.body.innerHTML = `
-          <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; color: #004750; font-family: sans-serif;">
-            <h2>Merci d'avoir participé</h2>
-          </div>
-        `;
-        return;
+      const urlToken = new URLSearchParams(window.location.search).get("token");
+      if (urlToken) {
+        sessionStorage.setItem("quiz_user_token", urlToken);
       }
 
-      // ✅ Token valide : on peut continuer
-      showLoading();
-      document.getElementById('question-card').classList.add('show');
+      // On vérifie d'abord la validité du token AVANT de tout lancer
+      fetch(`${API_URL}?action=checkResetStatus&cacheBuster=${Date.now()}`)
+        .then(res => res.json())
+        .then(data => {
+          const validToken = data?.accessToken || "";
+          const resetTimestamp = data?.resetTimestamp || "0";
+          const storedTimestamp = localStorage.getItem("lastKnownResetTimestamp") || "0";
 
-      if (resetTimestamp !== storedTimestamp) {
-        localStorage.setItem("lastKnownResetTimestamp", resetTimestamp);
-        resetAllAnswers();
-        showToast("Quiz réinitialisé !");
-      }
+          if (!urlToken || urlToken !== validToken) {
+            document.body.innerHTML = `
+              <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; flex-direction: column; background: #f8fafc; color: #004750; font-family: sans-serif; padding: 1rem; text-align: center;">
+                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#00CE7C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                <h2 style="margin-top: 1rem;">Merci d'avoir participé</h2>
+                <p style="margin-top: 0.5rem; color: #6b7280;">Le quiz est maintenant terminé.</p>
+              </div>
+            `;
+            return;
+          }
 
-      pollQuestion();
-      setInterval(pollQuestion, 2000);
-      setInterval(checkForReset, 3000);
-    })
-    .catch(err => {
-      console.error("Erreur de validation du token :", err);
-      document.body.innerHTML = `
-        <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f8fafc; color: #004750; font-family: sans-serif;">
-          <h2>Erreur de connexion au quiz</h2>
-        </div>
-      `;
+          // Token valide : on peut continuer
+          showLoading();
+          document.getElementById('question-card').classList.add('show');
+
+          if (resetTimestamp !== storedTimestamp) {
+            localStorage.setItem("lastKnownResetTimestamp", resetTimestamp);
+            resetAllAnswers();
+            showToast("Quiz réinitialisé !");
+          }
+
+          // Démarrage du quiz
+          pollQuestion();
+          
+          // Intervalles optimisés pour réduire la consommation de batterie sur mobile
+          setInterval(pollQuestion, 3000);
+          setInterval(checkForReset, 5000);
+        })
+        .catch(err => {
+          console.error("Erreur de validation du token :", err);
+          document.body.innerHTML = `
+            <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; flex-direction: column; background: #f8fafc; color: #004750; font-family: sans-serif; padding: 1rem; text-align: center;">
+              <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <h2 style="margin-top: 1rem;">Erreur de connexion au quiz</h2>
+              <p style="margin-top: 0.5rem; color: #6b7280;">Veuillez rafraîchir la page ou réessayer plus tard.</p>
+              <button style="margin-top: 1rem; padding: 0.75rem 1.5rem; background: #00CE7C; color: white; border: none; border-radius: 8px; font-weight: 600;" onclick="window.location.reload()">Rafraîchir</button>
+            </div>
+          `;
+        });
     });
-});
   </script>
 </body>
 </html>
