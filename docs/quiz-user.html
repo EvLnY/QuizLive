@@ -687,7 +687,7 @@ document.getElementById("quiz-form").addEventListener("submit", async (e) => {
     // Nouvelle approche : envoi de toutes les réponses en une seule requête
     const formData = new URLSearchParams();
     formData.append("questionId", currentQuestion.id);
-    formData.append("choices", JSON.stringify(selected)); // Envoyer un tableau JSON de toutes les réponses
+    selected.forEach(choice => formData.append("choice", choice)); // Envoyer un tableau JSON de toutes les réponses
     formData.append("userToken", userToken);
     formData.append("isMultiple", isMultiple.toString()); // Indiquer s'il s'agit d'une question à choix multiples
 
