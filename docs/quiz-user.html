@@ -751,7 +751,7 @@ document.getElementById("quiz-form").addEventListener("submit", async (e) => {
           if (resetTimestamp !== storedTimestamp) {
             localStorage.setItem("lastKnownResetTimestamp", resetTimestamp);
             resetAllAnswers();
-            showToast("Quiz initialisé !");
+            showToast("Quiz réinitialisé par l'administrateur !");
             pollQuestion();
           }
         })
@@ -761,12 +761,22 @@ document.getElementById("quiz-form").addEventListener("submit", async (e) => {
     }
 
     function resetAllAnswers() {
-  Object.keys(localStorage).forEach(key => {
-    if (key.startsWith("answered_") || key.startsWith("choices_") || key.startsWith("choices_") || key.endsWith("_timestamp")) {
-      localStorage.removeItem(key);
+      Object.keys(localStorage).filter(k => k.startsWith("answered_")).forEach(k => localStorage.removeItem(k));
     }
-  });
-}
+
+    // Nettoyage des anciens choix (plus de 24h)
+    function cleanupOldChoices() {
+      const now = Date.now();
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('choices_')) {
+          const timestamp = localStorage.getItem(`${key}_timestamp`);
+          if (timestamp && now - parseInt(timestamp) > 86400000) { // 24 heures
+            localStorage.removeItem(key);
+            localStorage.removeItem(`${key}_timestamp`);
+          }
+        }
+      });
+    }
     
     // AJOUT de la condition de vérification du token AVANT chargement du quiz
     document.addEventListener('DOMContentLoaded', () => {
