@@ -418,6 +418,12 @@
     let currentQuestion = null;
     let isFirstLoad = true;
     let selectedChoices = new Set();
+// Génération d'un identifiant utilisateur unique stocké localement
+if (!localStorage.quizToken) {
+  localStorage.quizToken = 't_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+}
+const userToken = localStorage.quizToken;
+
     let isPollingSuspended = false;
     
     // Optimisations mobiles
@@ -682,7 +688,7 @@ document.getElementById("quiz-form").addEventListener("submit", async (e) => {
     const formData = new URLSearchParams();
     formData.append("questionId", currentQuestion.id);
     formData.append("choices", JSON.stringify(selected)); // Envoyer un tableau JSON de toutes les réponses
-    formData.append("userAgent", navigator.userAgent);
+    formData.append("userToken", userToken);
     formData.append("isMultiple", isMultiple.toString()); // Indiquer s'il s'agit d'une question à choix multiples
 
     await fetch(`${API_URL}?action=submitAnswer`, {
