@@ -71,7 +71,7 @@ const cache = {
       .forEach(k => localStorage.removeItem(k));
     Object.keys(localStorage)
       .filter(k => k.startsWith("choices_"))
-      .forEach(k => localStorage.removeItem(k));  
+      .forEach(k => localStorage.removeItem(k));
   }
 };
 
