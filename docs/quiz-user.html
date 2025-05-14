@@ -702,7 +702,6 @@ document.getElementById("quiz-form").addEventListener("submit", async (e) => {
     // Supprimons les choix sauvegardés après soumission réussie
     localStorage.removeItem(`choices_${currentQuestion.id}`);
     localStorage.removeItem(`choices_${currentQuestion.id}_timestamp`);
-
     
     // Confirmation visuelle et haptique du succès
     document.getElementById("quiz-form").innerHTML = "<p class='message'>Réponse envoyée avec succès !</p>";
