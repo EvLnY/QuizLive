@@ -69,6 +69,9 @@ const cache = {
     Object.keys(localStorage)
       .filter(k => k.startsWith("answered_"))
       .forEach(k => localStorage.removeItem(k));
+    Object.keys(localStorage)
+      .filter(k => k.startsWith("choices_"))
+      .forEach(k => localStorage.removeItem(k));  
   }
 };
 
