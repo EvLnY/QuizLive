@@ -702,6 +702,7 @@ document.getElementById("quiz-form").addEventListener("submit", async (e) => {
     // Supprimons les choix sauvegardés après soumission réussie
     localStorage.removeItem(`choices_${currentQuestion.id}`);
     localStorage.removeItem(`choices_${currentQuestion.id}_timestamp`);
+
     
     // Confirmation visuelle et haptique du succès
     document.getElementById("quiz-form").innerHTML = "<p class='message'>Réponse envoyée avec succès !</p>";
@@ -763,13 +764,13 @@ document.getElementById("quiz-form").addEventListener("submit", async (e) => {
       Object.keys(localStorage).filter(k => k.startsWith("answered_")).forEach(k => localStorage.removeItem(k));
     }
 
-    // Nettoyage des anciens choix (plus de 24h)
+    // Nettoyage des anciens choix (plus de 2mn)
     function cleanupOldChoices() {
       const now = Date.now();
       Object.keys(localStorage).forEach(key => {
         if (key.startsWith('choices_')) {
           const timestamp = localStorage.getItem(`${key}_timestamp`);
-          if (timestamp && now - parseInt(timestamp) > 86400000) { // 24 heures
+          if (timestamp && now - parseInt(timestamp) > 120000) { // 2 minutes
             localStorage.removeItem(key);
             localStorage.removeItem(`${key}_timestamp`);
           }
