@@ -17,7 +17,14 @@
       --text-light: #6b7280;
       --success: #00CE7C;
       --error: #ef4444;
-      --animation-speed: 0.3s;
+      --transition: 0.3s ease;
+      --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.1);
+      --shadow-md: 0 4px 15px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 6px 12px rgba(0, 206, 124, 0.3);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-full: 50%;
     }
     
     * {
@@ -34,7 +41,6 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      padding: 0;
       overflow-x: hidden;
     }
     
@@ -43,7 +49,7 @@
       color: white;
       padding: 1rem;
       text-align: center;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      box-shadow: var(--shadow-sm);
       position: sticky;
       top: 0;
       z-index: 10;
@@ -53,8 +59,6 @@
       font-size: 1.4rem;
       font-weight: 700;
       margin: 0;
-      position: relative;
-      z-index: 1;
     }
     
     .quiz-container {
@@ -67,13 +71,13 @@
     
     .question-card {
       background: var(--card);
-      border-radius: 16px;
+      border-radius: var(--radius-lg);
       padding: 1.25rem;
       margin-bottom: 1rem;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      box-shadow: var(--shadow-md);
       position: relative;
       overflow: hidden;
-      transition: transform var(--animation-speed) ease;
+      transition: transform var(--transition);
     }
     
     #question {
@@ -93,10 +97,10 @@
       align-items: center;
       width: 100%;
       padding: 1rem;
-      border-radius: 12px;
+      border-radius: var(--radius-md);
       background: rgba(199, 241, 214, 0.5);
       border: none;
-      transition: all var(--animation-speed) ease;
+      transition: all var(--transition);
       cursor: pointer;
       position: relative;
       overflow: hidden;
@@ -123,15 +127,14 @@
       min-width: 24px;
       border: 2px solid var(--accent);
       margin-right: 0.75rem;
-      position: relative;
-      transition: all var(--animation-speed) ease;
+      transition: all var(--transition);
       display: flex;
       align-items: center;
       justify-content: center;
     }
     
     .choice-radio {
-      border-radius: 50%;
+      border-radius: var(--radius-full);
     }
     
     .choice-checkbox {
@@ -149,7 +152,7 @@
       width: 12px;
       height: 12px;
       background: white;
-      border-radius: 50%;
+      border-radius: var(--radius-full);
     }
     
     .choice-btn.selected .choice-checkbox::after {
@@ -170,19 +173,20 @@
       padding: 1rem;
       font-size: 1.1rem;
       font-weight: 600;
-      border-radius: 12px;
+      border-radius: var(--radius-md);
       cursor: pointer;
       width: 100%;
       box-shadow: 0 4px 6px rgba(0, 206, 124, 0.25);
-      transition: all var(--animation-speed) ease;
+      transition: all var(--transition);
       position: relative;
       overflow: hidden;
       margin-top: 1rem;
     }
     
-    .submit-btn:hover, .submit-btn:focus {
+    .submit-btn:hover, 
+    .submit-btn:focus {
       background: var(--primary-dark);
-      box-shadow: 0 6px 12px rgba(0, 206, 124, 0.3);
+      box-shadow: var(--shadow-lg);
     }
     
     .submit-btn:active {
@@ -194,7 +198,7 @@
       width: 100px;
       height: 100px;
       background: rgba(255, 255, 255, 0.4);
-      border-radius: 50%;
+      border-radius: var(--radius-full);
       transform: scale(0);
       animation: ripple 0.6s linear;
       pointer-events: none;
@@ -209,7 +213,7 @@
     
     .message {
       padding: 1rem;
-      border-radius: 12px;
+      border-radius: var(--radius-md);
       font-weight: 600;
       text-align: center;
       animation: fadeIn 0.5s ease;
@@ -238,7 +242,7 @@
       height: 36px;
       border: 4px solid rgba(0, 206, 124, 0.2);
       border-top-color: var(--primary);
-      border-radius: 50%;
+      border-radius: var(--radius-full);
       animation: spin 1s linear infinite;
     }
     
@@ -301,8 +305,8 @@
       padding: 12px 16px;
       background-color: var(--primary-dark);
       color: white;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-md);
       z-index: 100;
       opacity: 0;
       transition: all 0.3s ease;
@@ -315,28 +319,7 @@
       transform: translateX(-50%) translateY(0);
     }
     
-    /* Progress indicator */
-    .progress-container {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 1rem;
-    }
-    
-    .progress-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background-color: var(--tertiary);
-      margin: 0 4px;
-      transition: all 0.3s ease;
-    }
-    
-    .progress-dot.active {
-      background-color: var(--primary);
-      transform: scale(1.3);
-    }
-    
-    /* Waiting for question state */
+    /* State displays */
     .waiting-state {
       text-align: center;
       padding: 2rem;
@@ -347,7 +330,7 @@
       display: inline-block;
       width: 64px;
       height: 64px;
-      border-radius: 50%;
+      border-radius: var(--radius-full);
       background: rgba(0, 206, 124, 0.1);
       margin-bottom: 1rem;
       position: relative;
@@ -361,7 +344,7 @@
       top: 0;
       left: 0;
       background: rgba(0, 206, 124, 0.2);
-      border-radius: 50%;
+      border-radius: var(--radius-full);
       animation: pulse 2s infinite;
     }
     
@@ -381,13 +364,25 @@
     .error-message {
       background: rgba(239, 68, 68, 0.1);
       padding: 1rem;
-      border-radius: 12px;
+      border-radius: var(--radius-md);
       margin-top: 1rem;
     }
     
-    /* Pour empêcher le défilement du body quand le modal est ouvert */
+    /* Modal handling */
     body.modal-open {
       overflow: hidden;
+    }
+    
+    @media (min-width: 768px) {
+      .quiz-container {
+        max-width: 600px;
+      }
+      .question-card {
+        padding: 1.5rem;
+      }
+      #question {
+        font-size: 1.3rem;
+      }
     }
   </style>
 </head>
@@ -396,7 +391,7 @@
     <h1>Quiz Interactif</h1>
   </div>
 
-  <div id="resetToast" class="toast">Quiz réinitialisé !</div>
+  <div id="toast" class="toast">Quiz réinitialisé !</div>
 
   <div class="quiz-container">
     <div class="question-card animate-in" id="question-card">
@@ -409,466 +404,9 @@
   </div>
 
   <div class="footer">
-    Votre réponse est sous compromis… révélation imminente !
+    Votre réponse est sous compromis… révélation imminente !
   </div>
 
-  <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbzhmLYw_vwrJhQW-15V1gae3DW_or6M7DoceBq49teLytqgy18yc9Q9Bse-ZSApjMsj/exec";
-    let lastQuestionId = null;
-    let currentQuestion = null;
-    let isFirstLoad = true;
-    let selectedChoices = new Set();
-// Génération d'un identifiant utilisateur unique stocké localement
-if (!localStorage.quizToken) {
-  localStorage.quizToken = 't_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-}
-const userToken = localStorage.quizToken;
-
-    let isPollingSuspended = false;
-    
-    // Optimisations mobiles
-    document.addEventListener('touchstart', function() {}, {passive: true});
-
-    function showLoading() {
-      document.getElementById('loading').style.display = 'flex';
-      document.getElementById('quiz-form').style.display = 'none';
-    }
-
-    function hideLoading() {
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('quiz-form').style.display = 'block';
-    }
-
-    function showToast(message, duration = 3000) {
-      const toast = document.getElementById('resetToast');
-      toast.textContent = message;
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), duration);
-    }
-
-    function createRipple(event, element) {
-      const ripple = document.createElement('span');
-      ripple.classList.add('ripple');
-      element.appendChild(ripple);
-      
-      const rect = element.getBoundingClientRect();
-      const x = event.clientX - rect.left;
-      const y = event.clientY - rect.top;
-      
-      ripple.style.left = `${x}px`;
-      ripple.style.top = `${y}px`;
-      
-      setTimeout(() => {
-        ripple.remove();
-      }, 600);
-    }
-
-    function stripMultiTag(text) {
-      return text.replace("::multi", "").trim();
-    }
-
-    function toggleChoice(choiceBtn, isMultiple) {
-      const value = choiceBtn.dataset.value;
-      
-      if (isMultiple) {
-        if (selectedChoices.has(value)) {
-          selectedChoices.delete(value);
-          choiceBtn.classList.remove('selected');
-        } else {
-          selectedChoices.add(value);
-          choiceBtn.classList.add('selected');
-        }
-      } else {
-        // Pour les questions à choix unique, désélectionnez tous les autres
-        document.querySelectorAll('.choice-btn').forEach(btn => {
-          btn.classList.remove('selected');
-        });
-        selectedChoices.clear();
-        selectedChoices.add(value);
-        choiceBtn.classList.add('selected');
-      }
-    }
-
-    async function pollQuestion() {
-      try {
-        const res = await fetch(`${API_URL}?action=getQuestion&cacheBuster=${Date.now()}`);
-        const data = await res.json();
-
-        if (!data || data.id === "") {
-          document.getElementById('question').textContent = "En attente d'une nouvelle question...";
-          document.getElementById('loading').style.display = 'none';
-          document.getElementById('quiz-form').innerHTML = `
-            <div class="waiting-state">
-              <div class="pulse"></div>
-              <p>En attente d'une nouvelle question...</p>
-            </div>
-          `;
-          return;
-        }
-
-        const alreadyAnswered = localStorage.getItem("answered_" + data.id);
-        
-        // Vérifions si c'est la même question que celle actuellement affichée
-        if (lastQuestionId === data.id) {
-          // Si la question est la même, on ne fait pas de rendu complet
-          // mais on vérifie si on doit afficher "déjà répondu"
-          if (alreadyAnswered && document.getElementById('quiz-form').querySelector('.message') === null) {
-            const questionElem = document.getElementById("question");
-            questionElem.innerHTML = `${stripMultiTag(data.question)} <span class="answered-tag">Répondu</span>`;
-            document.getElementById('quiz-form').innerHTML = "<p class='message'>Vous avez déjà répondu à cette question.</p>";
-          }
-          return;
-        }
-        
-        // Sauvegardons les choix actuels avant de changer de question
-        if (currentQuestion) {
-          localStorage.setItem(`choices_${currentQuestion.id}`, JSON.stringify(Array.from(selectedChoices)));
-        }
-        
-        // À partir d'ici nous avons une nouvelle question
-        const isNewQuestion = true;
-        lastQuestionId = data.id;
-        currentQuestion = data;
-        
-        // Réinitialisation des choix pour la nouvelle question
-        selectedChoices.clear();
-        
-        // Récupérons les choix sauvegardés si l'utilisateur revient à une question vue précédemment
-        const savedChoices = localStorage.getItem(`choices_${data.id}`);
-        if (savedChoices) {
-          try {
-            const parsedChoices = JSON.parse(savedChoices);
-            parsedChoices.forEach(choice => selectedChoices.add(choice));
-          } catch (e) {
-            console.error("Erreur lors de la récupération des choix sauvegardés", e);
-          }
-        }
-
-        const questionElem = document.getElementById("question");
-        const form = document.getElementById("quiz-form");
-        hideLoading();
-
-        if (alreadyAnswered) {
-          questionElem.innerHTML = `${stripMultiTag(data.question)} <span class="answered-tag">Répondu</span>`;
-          form.innerHTML = "<p class='message'>Vous avez déjà répondu à cette question.</p>";
-          return;
-        }
-
-        const isMultiple = data.question.includes("::multi");
-        questionElem.textContent = stripMultiTag(data.question);
-
-        if (isNewQuestion) {
-          // Effet visuel pour nouvelle question
-          const card = document.getElementById('question-card');
-          card.classList.add('shake');
-          setTimeout(() => card.classList.remove('shake'), 500);
-          
-          // Vibration sur mobile pour nouvelle question (si supporté)
-          if ('vibrate' in navigator) {
-            navigator.vibrate(100);
-          }
-        }
-
-        form.innerHTML = "";
-
-        data.choices.forEach((choice, i) => {
-          const div = document.createElement("div");
-          div.className = "choice-container";
-          
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = "choice-btn";
-          btn.dataset.value = choice;
-          
-          // Si ce choix fait partie des choix sélectionnés précédemment, on l'active
-          if (selectedChoices.has(choice)) {
-            btn.classList.add('selected');
-          }
-          
-          btn.innerHTML = `
-            <div class="choice-icon ${isMultiple ? 'choice-checkbox' : 'choice-radio'}"></div>
-            <span class="choice-text">${choice}</span>
-          `;
-          
-          btn.addEventListener('click', (e) => {
-            toggleChoice(btn, isMultiple);
-            createRipple(e, btn);
-            
-            // Sauvegarde immédiate des choix après chaque clic
-            localStorage.setItem(`choices_${data.id}`, JSON.stringify(Array.from(selectedChoices)));
-          });
-          
-          if (isFirstLoad || isNewQuestion) {
-            btn.style.opacity = "0";
-            btn.style.transform = "translateX(20px)";
-            btn.style.transition = "all 0.3s ease";
-          }
-          
-          div.appendChild(btn);
-          form.appendChild(div);
-          
-          if (isFirstLoad || isNewQuestion) {
-            setTimeout(() => {
-              btn.style.opacity = "1";
-              btn.style.transform = "translateX(0)";
-            }, 100 + (i * 80));
-          }
-        });
-
-        const submitBtn = document.createElement("button");
-        submitBtn.type = "submit";
-        submitBtn.className = "submit-btn";
-        submitBtn.textContent = isMultiple ? "Envoyer mes réponses" : "Envoyer ma réponse";
-        submitBtn.addEventListener('click', (e) => {
-          createRipple(e, submitBtn);
-        });
-        
-        if (isFirstLoad || isNewQuestion) {
-          submitBtn.style.opacity = "0";
-        }
-        
-        form.appendChild(submitBtn);
-        
-        if (isFirstLoad || isNewQuestion) {
-          setTimeout(() => {
-            submitBtn.style.opacity = "1";
-            submitBtn.style.transition = "opacity 0.3s ease";
-          }, 100 + (data.choices.length * 80));
-        }
-
-        isFirstLoad = false;
-      } catch (err) {
-        console.error("Erreur lors de la récupération de la question :", err);
-        document.getElementById('question').textContent = "Erreur de connexion";
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('quiz-form').innerHTML = `
-          <div class="error-state">
-            <p>Impossible de se connecter au serveur</p>
-            <p class="error-message">Veuillez vérifier votre connexion et rafraîchir la page</p>
-          </div>
-        `;
-      }
-    }
-
-    // Remplacez la portion du code responsable de l'envoi des réponses (dans le gestionnaire de l'événement submit)
-// Localisé dans la partie document.getElementById("quiz-form").addEventListener("submit", async (e) => {...})
-
-document.getElementById("quiz-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  if (!currentQuestion) return;
-
-  const submitBtn = e.target.querySelector("button[type='submit']");
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.textContent = "Envoi en cours...";
-    submitBtn.style.opacity = "0.7";
-  }
-
-  const isMultiple = currentQuestion.question.includes("::multi");
-  const selected = Array.from(selectedChoices);
-
-  if (selected.length === 0) {
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.textContent = isMultiple ? "Envoyer mes réponses" : "Envoyer ma réponse";
-      submitBtn.style.opacity = "1";
-    }
-    document.getElementById('question-card').classList.add('shake');
-    setTimeout(() => document.getElementById('question-card').classList.remove('shake'), 500);
-    
-    // Vibration pour erreur
-    if ('vibrate' in navigator) {
-      navigator.vibrate([50, 50, 50]);
-    }
-    return;
-  }
-
-  try {
-    // Nouvelle approche : envoi de toutes les réponses en une seule requête
-    const formData = new URLSearchParams();
-    formData.append("questionId", currentQuestion.id);
-    selected.forEach(choice => formData.append("choice", choice)); // Envoyer un tableau JSON de toutes les réponses
-    formData.append("userToken", userToken);
-    formData.append("isMultiple", isMultiple.toString()); // Indiquer s'il s'agit d'une question à choix multiples
-
-    await fetch(`${API_URL}?action=submitAnswer`, {
-      method: "POST",
-      body: formData,
-      headers: { "Content-Type": "application/x-www-form-urlencoded" }
-    });
-
-    localStorage.setItem("answered_" + currentQuestion.id, "1");
-    
-    // Supprimons les choix sauvegardés après soumission réussie
-    localStorage.removeItem(`choices_${currentQuestion.id}`);
-    localStorage.removeItem(`choices_${currentQuestion.id}_timestamp`);
-
-    
-    // Confirmation visuelle et haptique du succès
-    document.getElementById("quiz-form").innerHTML = "<p class='message'>Réponse envoyée avec succès !</p>";
-    document.getElementById("question").innerHTML = `${stripMultiTag(currentQuestion.question)} <span class="answered-tag">Répondu</span>`;
-    
-    if ('vibrate' in navigator) {
-      navigator.vibrate(200);
-    }
-  } catch (err) {
-    console.error("Erreur lors de l'envoi :", err);
-    document.getElementById("quiz-form").innerHTML = `
-      <div class="error-state">
-        <p class="error-message">Erreur lors de l'envoi. Veuillez réessayer.</p>
-        <button class="submit-btn" onclick="window.location.reload()">Réessayer</button>
-      </div>`;
-  }
-});
-
-    function checkForReset() {
-      const urlToken = new URLSearchParams(window.location.search).get("token");
-      const sessionToken = sessionStorage.getItem("quiz_user_token");
-
-      fetch(`${API_URL}?action=checkResetStatus&cacheBuster=${Date.now()}`)
-        .then(res => res.json())
-        .then(data => {
-          const resetTimestamp = data?.resetTimestamp || "0";
-          const validToken = data?.accessToken || "";
-          const storedTimestamp = localStorage.getItem("lastKnownResetTimestamp") || "0";
-
-          // Si aucun token, ou token invalide, on bloque l'accès
-          if (!urlToken || !validToken || urlToken !== validToken) {
-            document.body.innerHTML = `
-              <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; flex-direction: column; background: #f8fafc; color: #004750; font-family: sans-serif; padding: 1rem; text-align: center;">
-                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#00CE7C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                </svg>
-                <h2 style="margin-top: 1rem;">Merci d'avoir participé</h2>
-                <p style="margin-top: 0.5rem; color: #6b7280;">Le quiz est maintenant terminé.</p>
-              </div>
-            `;
-            return;
-          }
-
-          // Enregistrer le timestamp si nouveau reset détecté
-          if (resetTimestamp !== storedTimestamp) {
-            localStorage.setItem("lastKnownResetTimestamp", resetTimestamp);
-            resetAllAnswers();
-            showToast("Quiz réinitialisé par l'administrateur !");
-            pollQuestion();
-          }
-        })
-        .catch(err => {
-          console.error("Erreur lors de la vérification du token :", err);
-        });
-    }
-
-    function resetAllAnswers() {
-  // Supprimer les réponses soumises
-  Object.keys(localStorage).filter(k => k.startsWith("answered_")).forEach(k => localStorage.removeItem(k));
-  
-  // Supprimer également tous les choix sauvegardés
-  Object.keys(localStorage).filter(k => k.startsWith("choices_")).forEach(k => localStorage.removeItem(k));
-  
-  // Réinitialiser les sélections actuelles
-  selectedChoices.clear();
-}
-
-    // Nettoyage des anciens choix (plus de 2mn)
-    function cleanupOldChoices() {
-      const now = Date.now();
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('choices_')) {
-          const timestamp = localStorage.getItem(`${key}_timestamp`);
-          if (timestamp && now - parseInt(timestamp) > 120000) { // 2 minutes
-            localStorage.removeItem(key);
-            localStorage.removeItem(`${key}_timestamp`);
-          }
-        }
-      });
-    }
-    
-    // AJOUT de la condition de vérification du token AVANT chargement du quiz
-    document.addEventListener('DOMContentLoaded', () => {
-      // Nettoyage des données anciennes
-      cleanupOldChoices();
-    
-      const urlToken = new URLSearchParams(window.location.search).get("token");
-      if (urlToken) {
-        sessionStorage.setItem("quiz_user_token", urlToken);
-      }
-
-      // On vérifie d'abord la validité du token AVANT de tout lancer
-      fetch(`${API_URL}?action=checkResetStatus&cacheBuster=${Date.now()}`)
-        .then(res => res.json())
-        .then(data => {
-          const validToken = data?.accessToken || "";
-          const resetTimestamp = data?.resetTimestamp || "0";
-          const storedTimestamp = localStorage.getItem("lastKnownResetTimestamp") || "0";
-
-          if (!urlToken || urlToken !== validToken) {
-            document.body.innerHTML = `
-              <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; flex-direction: column; background: #f8fafc; color: #004750; font-family: sans-serif; padding: 1rem; text-align: center;">
-                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#00CE7C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                </svg>
-                <h2 style="margin-top: 1rem;">Merci d'avoir participé</h2>
-                <p style="margin-top: 0.5rem; color: #6b7280;">Le quiz est maintenant terminé.</p>
-              </div>
-            `;
-            return;
-          }
-
-          // Token valide : on peut continuer
-          showLoading();
-          document.getElementById('question-card').classList.add('show');
-
-          if (resetTimestamp !== storedTimestamp) {
-            localStorage.setItem("lastKnownResetTimestamp", resetTimestamp);
-            resetAllAnswers();
-            showToast("Quiz réinitialisé !");
-          }
-
-          // Démarrage du quiz
-          pollQuestion();
-          
-          // Intervalles optimisés pour réduire la consommation de batterie sur mobile
-          // Polling moins fréquent pour éviter les problèmes de sélection
-          const pollInterval = setInterval(pollQuestion, 5000);
-          const resetCheckInterval = setInterval(checkForReset, 8000);
-          
-          // Mécanisme pour désactiver temporairement le polling pendant que l'utilisateur interagit
-          document.addEventListener('touchstart', () => {
-            clearInterval(pollInterval);
-            clearInterval(resetCheckInterval);
-            
-            // Redémarrage du polling après 10 secondes d'inactivité
-            const resumePolling = setTimeout(() => {
-              pollQuestion();
-              setInterval(pollQuestion, 5000);
-              setInterval(checkForReset, 8000);
-            }, 10000);
-            
-            // Si l'utilisateur interagit à nouveau, on réinitialise le timer
-            document.addEventListener('touchstart', () => {
-              clearTimeout(resumePolling);
-            }, { once: true });
-          }, { passive: true });
-        })
-        .catch(err => {
-          console.error("Erreur de validation du token :", err);
-          document.body.innerHTML = `
-            <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; flex-direction: column; background: #f8fafc; color: #004750; font-family: sans-serif; padding: 1rem; text-align: center;">
-              <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-              </svg>
-              <h2 style="margin-top: 1rem;">Erreur de connexion au quiz</h2>
-              <p style="margin-top: 0.5rem; color: #6b7280;">Veuillez rafraîchir la page ou réessayer plus tard.</p>
-              <button style="margin-top: 1rem; padding: 0.75rem 1.5rem; background: #00CE7C; color: white; border: none; border-radius: 8px; font-weight: 600;" onclick="window.location.reload()">Rafraîchir</button>
-            </div>
-          `;
-        });
-    });
-  </script>
+  <script src="quiz.js"></script>
 </body>
 </html>
