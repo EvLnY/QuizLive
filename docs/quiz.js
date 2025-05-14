@@ -523,7 +523,7 @@ const quiz = {
       if (resetTimestamp !== storedTimestamp) {
         cache.set(CONFIG.RESET_TIMESTAMP_KEY, resetTimestamp);
         cache.resetAllAnswers();
-        ui.showToast("Quiz réinitialisé !");
+        ui.showToast("Quiz initialisé !");
       }
       
       await quiz.pollQuestion();
