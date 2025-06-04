@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Title</title>
+    </head>
+    <body><script>
+// Configuration automatique - Récupère le titre depuis l'URL
+function getSessionTitleFromUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionTitle = urlParams.get('session');
+    
+    if (!sessionTitle) {
+        console.error('Paramètre session manquant dans l\'URL');
+        // Fallback vers une valeur par défaut si nécessaire
+        return 'Extranet';
+    }
+    
+    return sessionTitle;
+}
+
+var sessionTitle = getSessionTitleFromUrl(); // Récupération automatique
+var webAppUrl = 'https://script.google.com/macros/s/AKfycbxr7jUz66CxNoeQLj3TWvudiyZ-osAefwVu9JRSSxd-EuexGSQwdPdIQRcjV7H4K2xa6Q/exec'; // URL de votre Web App
+var videoId = null; // Sera récupéré automatiquement
+
+console.log('Titre de session récupéré:', sessionTitle);
+</script>
+
+<style>
+/* Variables CSS pour faciliter la maintenance */
+:root {
+    --container-width: 580px;
+    --container-height: 460px;
+    --chat-width: 220px;
+    --bg-color: #1e1e1e;
+    --btn-color: #004747;
+    --text-color: lightgrey;
+    --border-radius: 10px;
+    --transition-speed: 0.3s;
+}
+
+.video-container {
+    position: relative;
+    width: var(--container-width);
+    height: var(--container-height);
+    background-color: var(--bg-color);
+}
+
+.video-wrapper {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.youtube-player {
+    width: 100%;
+    height: 100%;
+}
+
+.loading-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--text-color);
+    font-family: 'Roboto', Arial, sans-serif;
+    font-size: 18px;
+    z-index: 5;
+}
+
+.error-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #ff4444;
+    font-family: 'Roboto', Arial, sans-serif;
+    font-size: 16px;
+    text-align: center;
+    z-index: 5;
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.8);
+    border-radius: 10px;
+}
+
+.chat-trigger {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 5%;
+    height: 100%;
+    cursor: pointer;
+    z-index: 2;
+    display: none;
+}
+
+.chat-container {
+    position: absolute;
+    background-color: var(--bg-color);
+    bottom: 0;
+    right: calc(-1 * var(--chat-width));
+    width: var(--chat-width);
+    height: var(--container-height);
+    overflow: hidden;
+    z-index: 3;
+    opacity: 1;
+    transition: opacity var(--transition-speed) ease-in-out;
+}
+
+.chat-header {
+    color: var(--text-color);
+    padding: 10px;
+    text-align: center;
+    font: 18px 'Roboto', Arial, sans-serif;
+}
+
+.chat-footer {
+    position: absolute;
+    bottom: 15px;
+    width: 100%;
+    color: var(--text-color);
+    padding: 5px;
+    text-align: center;
+    font: 15px 'Roboto', Arial, sans-serif;
+}
+
+.blink-text {
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+.chat-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    transform-origin: 0 0;
+    clip-path: inset(180px 15px 220px 15px);
+}
+
+.fullscreen-btn {
+    position: absolute;
+    bottom: 11px;
+    left: 62%;
+    padding: 7px 57px;
+    background-color: var(--btn-color);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    z-index: 4;
+    font-size: 20px;
+    transition: background-color 0.2s ease;
+}
+
+.fullscreen-btn:hover {
+    background-color: #006666;
+}
+
+/* États plein écran */
+:is(:fullscreen, :-webkit-full-screen, :-moz-full-screen, :-ms-full-screen) .video-wrapper {
+    width: 100%;
+    height: 100%;
+}
+
+:is(:fullscreen, :-webkit-full-screen, :-moz-full-screen, :-ms-full-screen) .chat-container {
+    border-radius: var(--border-radius);
+    opacity: 0;
+}
+
+:is(:fullscreen, :-webkit-full-screen, :-moz-full-screen, :-ms-full-screen) .chat-trigger {
+    display: block;
+    height: 100%;
+}
+
+.iframe-wrapper {
+    position: absolute;
+    inset: 0;
+}
+
+.no-scroll {
+    overflow: hidden;
+}
+</style>
+
+<div class="video-container" id="container">
+    <div class="loading-message" id="loadingMessage">Chargement de la session...</div>
+    <div class="error-message" id="errorMessage" style="display: none;"></div>
+    
+    <div class="video-wrapper" id="videoWrapper">
+        <div class="youtube-player" id="youtubePlayer"></div>
+    </div>
+    
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-header">
+            Bonjour, <br><br>
+            <span class="blink-text">Pour commencer</span> <br><br>
+            Entrez votre prénom (sans chiffre, accent ni espace) et appuyez sur "Entrée".
+        </div>
+        
+        <div class="chat-footer">
+            ← Enfin, cliquez "Plein ecran"
+        </div>
+        
+        <div class="iframe-wrapper">
+            <iframe
+                class="chat-frame"
+                id="chatFrame"
+                src="https://kiwiirc.hybridirc.com/?theme=dark#apitraining1"
+                title="Fenêtre de chat hybride IRC">
+            </iframe>
+        </div>
+    </div>
+    
+    <div class="chat-trigger" id="chatTrigger"></div>
+    <button class="fullscreen-btn" id="fullscreenBtn">Plein écran</button>
+</div>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+// Configuration
+const CONFIG = {
+    videoAspectRatio: 16 / 9,
+    chatScale: {
+        widthRatio: 0.24,
+        heightRatio: 0.12,
+        rightOffset: 0.05,
+        bottomOffset: 0.08
+    }
+};
+
+// Variables globales
+let player;
+let isMouseOverChat = false;
+let isMouseOverTrigger = false;
+let isPlayerReady = false;
+
+// Éléments DOM
+const elements = {};
+
+// NOUVELLES FONCTIONS
+
+async function fetchVideoId() {
+    try {
+        const response = await fetch(`${webAppUrl}?title=${encodeURIComponent(sessionTitle)}`);
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        if (data.status === 'not-found' || data.videoId === 'not-found') {
+            throw new Error(`Session "${sessionTitle}" non trouvée. Vérifiez le titre de la session.`);
+        }
+        
+        return data.videoId;
+    } catch (error) {
+        console.error('Erreur lors de la récupération de l\'ID vidéo:', error);
+        throw error;
+    }
+}
+
+function showError(message) {
+    const errorElement = elements.errorMessage;
+    const loadingElement = elements.loadingMessage;
+    
+    loadingElement.style.display = 'none';
+    errorElement.textContent = message;
+    errorElement.style.display = 'block';
+}
+
+function hideLoadingMessage() {
+    const loadingElement = elements.loadingMessage;
+    if (loadingElement) {
+        loadingElement.style.display = 'none';
+    }
+}
+
+async function initializeVideo() {
+    try {
+        // Afficher le titre de session en cours de chargement
+        document.getElementById('loadingMessage').textContent = `Chargement de la session "${sessionTitle}"...`;
+        
+        // Récupère l'ID vidéo automatiquement
+        videoId = await fetchVideoId();
+        console.log('ID vidéo récupéré:', videoId);
+        
+        // Charge l'API YouTube si pas déjà fait
+        if (typeof YT === 'undefined' || !YT.Player) {
+            // Attend que l'API soit chargée
+            await new Promise(resolve => {
+                if (window.onYouTubeIframeAPIReady) {
+                    const originalCallback = window.onYouTubeIframeAPIReady;
+                    window.onYouTubeIframeAPIReady = () => {
+                        originalCallback();
+                        resolve();
+                    };
+                } else {
+                    window.onYouTubeIframeAPIReady = resolve;
+                }
+            });
+        }
+        
+        // Initialise le player avec l'ID récupéré
+        initializePlayer();
+        
+    } catch (error) {
+        showError(`Erreur: ${error.message}`);
+    }
+}
+
+function initializePlayer() {
+    if (!videoId) {
+        showError('ID vidéo non disponible');
+        return;
+    }
+    
+    player = new YT.Player('youtubePlayer', {
+        videoId: videoId,
+        playerVars: {
+            controls: 0,
+            disablekb: 1,
+            fs: 0,
+            rel: 0,
+            showinfo: 0,
+            modestbranding: 1,
+            autoplay: 0,
+            mute: 0
+        },
+        events: {
+            onReady: (event) => {
+                console.log("Player is ready");
+                isPlayerReady = true;
+                hideLoadingMessage();
+            },
+            onError: (event) => {
+                console.error('Erreur du player YouTube:', event.data);
+                showError('Erreur lors du chargement de la vidéo. Veuillez réessayer plus tard.');
+            }
+        }
+    });
+}
+
+// FONCTIONS MODIFIÉES (gardent la même logique mais s'adaptent au nouveau système)
+
+// Initialisation YouTube API
+function onYouTubeIframeAPIReady() {
+    // Cette fonction est maintenant appelée par initializeVideo()
+    console.log("YouTube API ready");
+}
+
+// Gestionnaire plein écran (inchangé)
+function toggleFullScreen() {
+    const container = elements.container;
+    const isFullscreen = document.fullscreenElement || 
+                       document.webkitFullscreenElement || 
+                       document.mozFullScreenElement || 
+                       document.msFullscreenElement;
+
+    if (!isFullscreen) {
+        const requestFS = container.requestFullscreen || 
+                        container.mozRequestFullScreen || 
+                        container.webkitRequestFullscreen || 
+                        container.msRequestFullscreen;
+        requestFS?.call(container);
+    } else {
+        const exitFS = document.exitFullscreen || 
+                     document.mozCancelFullScreen || 
+                     document.webkitExitFullscreen || 
+                     document.msExitFullscreen;
+        exitFS?.call(document);
+    }
+}
+
+// Gestion du chat en plein écran (inchangées)
+function handleFullScreenChange() {
+    const isFullscreen = !!(document.fullscreenElement || 
+                           document.webkitFullscreenElement || 
+                           document.mozFullScreenElement || 
+                           document.msFullscreenElement);
+
+    if (isFullscreen) {
+        setupFullscreenChat();
+    } else {
+        resetWindowedChat();
+    }
+}
+
+function setupFullscreenChat() {
+    const { videoWrapper, chatTrigger, chatContainer, chatFrame } = elements;
+    
+    Object.assign(videoWrapper.style, {
+        width: '100%',
+        height: '100%'
+    });
+
+    Object.assign(chatTrigger.style, {
+        display: 'block',
+        height: '100%'
+    });
+
+    const { innerWidth: screenWidth, innerHeight: screenHeight } = window;
+    let videoWidth = screenWidth;
+    let videoHeight = screenWidth / CONFIG.videoAspectRatio;
+
+    if (videoHeight > screenHeight) {
+        videoHeight = screenHeight;
+        videoWidth = screenHeight * CONFIG.videoAspectRatio;
+    }
+
+    const videoTop = (screenHeight - videoHeight) / 2;
+    const { widthRatio, heightRatio, rightOffset, bottomOffset } = CONFIG.chatScale;
+
+    Object.assign(chatContainer.style, {
+        width: `${videoWidth * widthRatio}px`,
+        height: `${videoHeight * heightRatio}px`,
+        right: `${videoWidth * rightOffset}px`,
+        bottom: `${videoHeight * bottomOffset + videoTop}px`,
+        borderRadius: '10px',
+        opacity: '0'
+    });
+
+    chatFrame.style.clipPath = 'none';
+    scaleIframe();
+    chatContainer.classList.add('no-scroll');
+}
+
+function resetWindowedChat() {
+    const { videoWrapper, chatTrigger, chatContainer, chatFrame } = elements;
+
+    Object.assign(videoWrapper.style, {
+        width: '100%',
+        height: '460px'
+    });
+
+    Object.assign(chatTrigger.style, {
+        display: 'none',
+        height: '460px'
+    });
+
+    Object.assign(chatContainer.style, {
+        width: '220px',
+        right: '-220px',
+        height: '460px',
+        bottom: '0',
+        borderRadius: '0',
+        opacity: '1'
+    });
+
+    chatFrame.style.clipPath = 'inset(175px 15px 220px 15px)';
+    resetIframeScale();
+    chatContainer.classList.remove('no-scroll');
+}
+
+function showChat() {
+    if (document.fullscreenElement || document.webkitFullscreenElement || 
+        document.mozFullScreenElement || document.msFullscreenElement) {
+        elements.chatContainer.style.opacity = '1';
+    }
+}
+
+function hideChat() {
+    if (!isMouseOverChat && !isMouseOverTrigger) {
+        if (document.fullscreenElement || document.webkitFullscreenElement || 
+            document.mozFullScreenElement || document.msFullscreenElement) {
+            elements.chatContainer.style.opacity = '0';
+        }
+    }
+}
+
+function scaleIframe() {
+    const { chatContainer, chatFrame } = elements;
+    const containerWidth = chatContainer.offsetWidth;
+    const containerHeight = chatContainer.offsetHeight;
+    const iframeWidth = 350;
+    const iframeHeight = 100;
+    const scale = Math.min(containerWidth / iframeWidth, containerHeight / iframeHeight);
+
+    chatFrame.style.transform = `scale(${scale})`;
+    chatFrame.parentElement.style.width = `${iframeWidth}px`;
+    chatFrame.parentElement.style.height = `${iframeHeight}px`;
+}
+
+function resetIframeScale() {
+    const { chatFrame } = elements;
+    chatFrame.style.transform = 'scale(1)';
+    Object.assign(chatFrame.parentElement.style, {
+        width: '100%',
+        height: '100%'
+    });
+}
+
+function setupEventListeners() {
+    const { chatFrame, chatTrigger, fullscreenBtn } = elements;
+
+    ['mouseenter', 'mouseleave'].forEach(event => {
+        chatFrame.addEventListener(event, () => {
+            isMouseOverChat = event === 'mouseenter';
+            isMouseOverChat ? showChat() : hideChat();
+        });
+
+        chatTrigger.addEventListener(event, () => {
+            isMouseOverTrigger = event === 'mouseenter';
+            isMouseOverTrigger ? showChat() : hideChat();
+        });
+    });
+
+    ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'msfullscreenchange']
+        .forEach(event => document.addEventListener(event, handleFullScreenChange));
+
+    fullscreenBtn.addEventListener('click', toggleFullScreen);
+}
+
+// INITIALISATION MODIFIÉE
+window.addEventListener('load', () => {
+    // Cache des éléments DOM
+    Object.assign(elements, {
+        container: document.getElementById('container'),
+        videoWrapper: document.getElementById('videoWrapper'),
+        chatContainer: document.getElementById('chatContainer'),
+        chatFrame: document.getElementById('chatFrame'),
+        chatTrigger: document.getElementById('chatTrigger'),
+        fullscreenBtn: document.getElementById('fullscreenBtn'),
+        loadingMessage: document.getElementById('loadingMessage'),
+        errorMessage: document.getElementById('errorMessage')
+    });
+
+    setupEventListeners();
+    
+    // Initialise la vidéo automatiquement avec le titre récupéré
+    initializeVideo();
+});
+
+// Export global pour YouTube API
+window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
+</script>
+    </body>
+</html>

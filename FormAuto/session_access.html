@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accès à la session</title>
+    <style>
+        :root {
+            --bg-color: rgba(0, 0, 0, 0);
+            --text-color: #e0e0e0;
+            --accent-color: #004747;
+            --error-color: #ff4444;
+            --success-color: #00aa00;
+            --warning-color: #ff8800;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Roboto', Arial, sans-serif;
+        }
+
+        .message-container {
+            text-align: center;
+            padding: 2rem;
+            border-radius: 10px;
+            background-color: rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .message {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .time-info {
+            font-size: 0.9rem;
+            color: #888;
+            margin-top: 1rem;
+        }
+
+        .error {
+            color: var(--error-color);
+        }
+
+        .success {
+            color: var(--success-color);
+        }
+
+        .warning {
+            color: var(--warning-color);
+        }
+
+        .countdown {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 1rem 0;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .live-indicator {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background-color: var(--success-color);
+            border-radius: 5px;
+            animation: pulse 2s infinite;
+        }
+
+        .ready-indicator {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background-color: var(--warning-color);
+            border-radius: 5px;
+        }
+
+        .access-btn {
+            margin-top: 1.5rem;
+            padding: 1rem 2rem;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            text-decoration: none;
+            display: inline-block;
+            transition: background-color 0.3s;
+        }
+
+        .access-btn:hover {
+            background-color: #006666;
+        }
+
+        .session-frame {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 820px;
+            height: 480px;
+            border: none;
+            z-index: 1000;
+            background-color: var(--bg-color);
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .session-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 999;
+        }
+
+        .close-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1001;
+            padding: 0.5rem 1rem;
+            background-color: rgba(255, 68, 68, 0.8);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .close-btn:hover {
+            background-color: rgba(255, 68, 68, 1);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .auto-opening {
+            font-size: 1rem;
+            color: var(--warning-color);
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="message-container" id="messageContainer">
+        <div class="message" id="message">Vérification de l'accès...</div>
+        <div class="countdown" id="countdown"></div>
+        <div class="time-info" id="timeInfo"></div>
+        <div id="actionContainer"></div>
+    </div>
+
+    <script>
+        const webAppUrl = 'https://script.google.com/macros/s/AKfycbxr7jUz66CxNoeQLj3TWvudiyZ-osAefwVu9JRSSxd-EuexGSQwdPdIQRcjV7H4K2xa6Q/exec';
+        const SESSION_ACCESS_WINDOW = 15; // minutes avant le début
+        let sessionData = null;
+        let countdownInterval = null;
+        let isLiveCheckInterval = null;
+        let autoOpenTriggered = false;
+
+        async function checkSessionAccess() {
+            try {
+                // Récupérer le titre de la session depuis l'URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const sessionTitle = urlParams.get('session');
+
+                if (!sessionTitle) {
+                    showError("Titre de la session manquant dans l'URL");
+                    return;
+                }
+
+                // Récupérer les informations de la session
+                const response = await fetch(`${webAppUrl}?title=${encodeURIComponent(sessionTitle)}`);
+                const data = await response.json();
+
+                if (data.error || data.status === 'not-found') {
+                    showError(`Session "${sessionTitle}" non trouvée`);
+                    return;
+                }
+
+                if (!data.startTime) {
+                    showError("Heure de début de session non disponible");
+                    return;
+                }
+
+                sessionData = data;
+                updateAccessStatus();
+                
+                // Mettre à jour le statut toutes les 30 secondes
+                setInterval(updateAccessStatus, 30000);
+
+            } catch (error) {
+                showError("Erreur lors de la vérification de l'accès");
+                console.error(error);
+            }
+        }
+
+        function updateAccessStatus() {
+            const now = new Date();
+            const sessionTime = new Date(sessionData.startTime);
+            
+            // Calculer les fenêtres d'accès
+            const accessStart = new Date(sessionTime);
+            accessStart.setMinutes(accessStart.getMinutes() - SESSION_ACCESS_WINDOW);
+            
+            // Vérifier si la session est le même jour que maintenant
+            const isSameDay = now.toDateString() === sessionTime.toDateString();
+            
+            // Vérifier le statut
+            if (isSameDay && now < accessStart) {
+                // Avant la fenêtre d'accès - mais seulement pour les sessions du jour
+                showWaiting(accessStart);
+            } else if (isSameDay && now >= accessStart && now < sessionTime) {
+                // Dans la fenêtre d'accès mais avant le début - seulement pour les sessions du jour
+                showReady();
+            } else if (now >= sessionTime) {
+                // Après l'heure de début - vérifier si c'est live ou terminé
+                if (isSameDay) {
+                    checkIfLive();
+                } else if (sessionTime < now) {
+                    // Session passée d'un autre jour
+                    showExpired();
+                } else {
+                    // Session future d'un autre jour - ne pas afficher de message d'attente
+                    showFutureSession();
+                }
+            } else {
+                // Session future d'un autre jour
+                showFutureSession();
+            }
+        }
+
+        async function checkIfLive() {
+            try {
+                // Vérifier le statut de la vidéo YouTube
+                const response = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,liveStreamingDetails&id=${sessionData.videoId}&key=YOUR_YOUTUBE_API_KEY`);
+                const data = await response.json();
+                
+                if (data.items && data.items.length > 0) {
+                    const video = data.items[0];
+                    const isLive = video.snippet.liveBroadcastContent === 'live';
+                    
+                    if (isLive) {
+                        showLive();
+                    } else {
+                        // Vérifier si c'est une session récente (moins de 2h après le début)
+                        const now = new Date();
+                        const sessionTime = new Date(sessionData.startTime);
+                        const timeDiff = (now - sessionTime) / (1000 * 60); // en minutes
+                        
+                        if (timeDiff < 120) { // 2 heures
+                            showReady(); // Peut-être en préparation
+                        } else {
+                            showExpired();
+                        }
+                    }
+                } else {
+                    // Fallback si pas d'API YouTube
+                    showReady();
+                }
+            } catch (error) {
+                console.error('Erreur lors de la vérification du statut live:', error);
+                // En cas d'erreur, afficher l'accès
+                showReady();
+            }
+        }
+
+        function showLive() {
+            clearCountdown();
+            const messageElement = document.getElementById('message');
+            messageElement.innerHTML = `
+                <div class="success">
+                    <div class="live-indicator">🔴 LIVE</div>
+                    <p>La session est en cours de diffusion</p>
+                    <div class="auto-opening">Ouverture automatique dans 3 secondes...</div>
+                </div>
+            `;
+            document.getElementById('timeInfo').textContent = 
+                `Session commencée à ${new Date(sessionData.startTime).toLocaleTimeString()}`;
+            
+            // Ouvrir automatiquement après 3 secondes
+            if (!autoOpenTriggered) {
+                autoOpenTriggered = true;
+                setTimeout(() => {
+                    openSession();
+                }, 3000);
+            }
+            
+            showAccessButton();
+        }
+
+        function showReady() {
+            clearCountdown();
+            const messageElement = document.getElementById('message');
+            const now = new Date();
+            const sessionTime = new Date(sessionData.startTime);
+            
+            if (now < sessionTime) {
+                messageElement.innerHTML = `
+                    <div class="warning">
+                        <div class="ready-indicator">⏳ PRÊT</div>
+                        <p>Vous pouvez accéder à la session</p>
+                        <p>Début dans ${Math.ceil((sessionTime - now) / 60000)} minutes</p>
+                        <div class="auto-opening">Ouverture automatique dans 3 secondes...</div>
+                    </div>
+                `;
+            } else {
+                messageElement.innerHTML = `
+                    <div class="warning">
+                        <div class="ready-indicator">⏳ ACCÈS</div>
+                        <p>Session disponible</p>
+                        <div class="auto-opening">Ouverture automatique dans 3 secondes...</div>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('timeInfo').textContent = 
+                `Session prévue à ${new Date(sessionData.startTime).toLocaleTimeString()}`;
+            
+            // Ouvrir automatiquement après 3 secondes
+            if (!autoOpenTriggered) {
+                autoOpenTriggered = true;
+                setTimeout(() => {
+                    openSession();
+                }, 3000);
+            }
+            
+            showAccessButton();
+        }
+
+        function showWaiting(accessStart) {
+            const messageElement = document.getElementById('message');
+            messageElement.innerHTML = `
+                <div class="message">
+                    <p>La session n'est pas encore accessible</p>
+                </div>
+            `;
+            startCountdown(accessStart);
+            hideAccessButton();
+            autoOpenTriggered = false; // Reset pour la prochaine fois
+        }
+
+        function showExpired() {
+            clearCountdown();
+            const messageElement = document.getElementById('message');
+            messageElement.innerHTML = `
+                <div class="error">
+                    <p>La session est terminée</p>
+                </div>
+            `;
+            document.getElementById('timeInfo').textContent = 
+                `La session était prévue à ${new Date(sessionData.startTime).toLocaleTimeString()}`;
+            hideAccessButton();
+        }
+
+        function showFutureSession() {
+            clearCountdown();
+            const messageElement = document.getElementById('message');
+            messageElement.innerHTML = `
+                <div class="error">
+                    <p>La session est terminée</p>
+                </div>
+            `;
+            document.getElementById('timeInfo').textContent = 
+                `La session était prévue à ${new Date(sessionData.startTime).toLocaleTimeString()}`;
+            hideAccessButton();
+        }
+
+        function showError(message) {
+            const messageElement = document.getElementById('message');
+            messageElement.innerHTML = `
+                <div class="error">
+                    <p>${message}</p>
+                </div>
+            `;
+            hideAccessButton();
+        }
+
+        function showAccessButton() {
+            const actionContainer = document.getElementById('actionContainer');
+            actionContainer.innerHTML = `
+                <button class="access-btn" onclick="openSession()">
+                    Accéder à la session manuellement
+                </button>
+            `;
+        }
+
+        function hideAccessButton() {
+            const actionContainer = document.getElementById('actionContainer');
+            actionContainer.innerHTML = '';
+        }
+
+        function openSession() {
+            // Récupérer le titre de la session depuis l'URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionTitle = urlParams.get('session');
+            
+            // Créer l'overlay de fond
+            const overlay = document.createElement('div');
+            overlay.className = 'session-overlay';
+            overlay.onclick = closeSession; // Clic sur l'overlay pour fermer
+            
+            // Créer l'iframe pour la session avec UTF-8 explicite
+            const sessionFrame = document.createElement('iframe');
+            sessionFrame.className = 'session-frame';
+            sessionFrame.id = 'sessionFrame';
+            
+            // URL simple qui fonctionne en local
+            sessionFrame.src = `Prez.html?session=${encodeURIComponent(sessionTitle)}`;
+            
+            // Assurer l'encodage UTF-8 pour l'iframe après chargement
+            sessionFrame.onload = function() {
+                try {
+                    // Accéder au document de l'iframe pour forcer l'UTF-8
+                    const iframeDoc = sessionFrame.contentDocument || sessionFrame.contentWindow.document;
+                    if (iframeDoc) {
+                        // Vérifier et ajouter la balise meta charset si nécessaire
+                        let metaCharset = iframeDoc.querySelector('meta[charset]');
+                        if (!metaCharset) {
+                            metaCharset = iframeDoc.createElement('meta');
+                            metaCharset.setAttribute('charset', 'UTF-8');
+                            if (iframeDoc.head) {
+                                iframeDoc.head.insertBefore(metaCharset, iframeDoc.head.firstChild);
+                            }
+                        }
+                        
+                        // Ajouter également une balise meta http-equiv si elle n'existe pas
+                        let metaContentType = iframeDoc.querySelector('meta[http-equiv="Content-Type"]');
+                        if (!metaContentType) {
+                            metaContentType = iframeDoc.createElement('meta');
+                            metaContentType.setAttribute('http-equiv', 'Content-Type');
+                            metaContentType.setAttribute('content', 'text/html; charset=UTF-8');
+                            if (iframeDoc.head) {
+                                iframeDoc.head.appendChild(metaContentType);
+                            }
+                        }
+                        
+                        console.log('UTF-8 encoding applied to iframe');
+                    }
+                } catch (e) {
+                    // En local, cela devrait fonctionner, mais on gère les erreurs
+                    console.log('Cannot access iframe content:', e.message);
+                }
+            };
+            
+            // Créer le bouton de fermeture
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'close-btn';
+            closeBtn.textContent = '✕ Fermer';
+            closeBtn.onclick = closeSession;
+            
+            // Ajouter à la page
+            document.body.appendChild(overlay);
+            document.body.appendChild(sessionFrame);
+            document.body.appendChild(closeBtn);
+            
+            // Masquer le contenu principal
+            document.getElementById('messageContainer').classList.add('hidden');
+        }
+
+        function closeSession() {
+            // Supprimer l'iframe, l'overlay et le bouton
+            const sessionFrame = document.getElementById('sessionFrame');
+            const overlay = document.querySelector('.session-overlay');
+            const closeBtn = document.querySelector('.close-btn');
+            
+            if (sessionFrame) sessionFrame.remove();
+            if (overlay) overlay.remove();
+            if (closeBtn) closeBtn.remove();
+            
+            // Réafficher le contenu principal
+            document.getElementById('messageContainer').classList.remove('hidden');
+            
+            // Reset du trigger d'ouverture automatique
+            autoOpenTriggered = false;
+            
+            // Actualiser le statut
+            updateAccessStatus();
+        }
+
+        function startCountdown(targetDate) {
+            clearCountdown();
+            
+            function updateCountdown() {
+                const now = new Date();
+                const diff = targetDate - now;
+
+                if (diff <= 0) {
+                    updateAccessStatus();
+                    return;
+                }
+
+                const hours = Math.floor(diff / 3600000);
+                const minutes = Math.floor((diff % 3600000) / 60000);
+                const seconds = Math.floor((diff % 60000) / 1000);
+
+                let countdownText = '';
+                if (hours > 0) {
+                    countdownText = `Accès dans ${hours}h ${minutes}m ${seconds}s`;
+                } else {
+                    countdownText = `Accès dans ${minutes}m ${seconds}s`;
+                }
+
+                document.getElementById('countdown').textContent = countdownText;
+                document.getElementById('timeInfo').textContent = 
+                    `Session prévue à ${new Date(sessionData.startTime).toLocaleTimeString()}`;
+            }
+
+            updateCountdown();
+            countdownInterval = setInterval(updateCountdown, 1000);
+        }
+
+        function clearCountdown() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            document.getElementById('countdown').textContent = '';
+        }
+
+        // Démarrer la vérification au chargement
+        window.addEventListener('load', checkSessionAccess);
+
+        // Gestion des événements clavier pour fermer la session
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && document.getElementById('sessionFrame')) {
+                closeSession();
+            }
+        });
+    </script>
+</body>
+</html>
