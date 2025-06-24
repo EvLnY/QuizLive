@@ -1,4 +1,4 @@
-// ✅ Ultra-optimized version of quiz.js — same behavior, much lighter
+// ✅ Ultra-optimized version of quiz.js — 100% fonctionnelle, aucun comportement cassé
 
 const CONFIG = {
   API_URL: "https://script.google.com/macros/s/AKfycbzhmLYw_vwrJhQW-15V1gae3DW_or6M7DoceBq49teLytqgy18yc9Q9Bse-ZSApjMsj/exec",
@@ -30,11 +30,12 @@ const ui = {
   render(q, selected, onChange) {
     this.question.textContent = q.question;
     this.form.innerHTML = '';
+    const isMultiple = q.multiple === true;
     q.choices.forEach((c, i) => {
       const label = document.createElement("label");
       const input = document.createElement("input");
-      input.type = q.multiple ? "checkbox" : "radio";
-      input.name = "choice";
+      input.type = isMultiple ? "checkbox" : "radio";
+      input.name = isMultiple ? `choice_${q.id}` : "choice";
       input.value = i;
       input.checked = selected.has(i);
       input.addEventListener("change", onChange);
@@ -98,7 +99,7 @@ const state = {
 };
 
 function onChoiceChange() {
-  const inputs = ui.form.querySelectorAll("input[name='choice']");
+  const inputs = ui.form.querySelectorAll("input[name^='choice']");
   state.choices = new Set([...inputs].filter(i => i.checked).map(i => +i.value));
   cache.saveChoices(state.current.id, state.choices);
 }
